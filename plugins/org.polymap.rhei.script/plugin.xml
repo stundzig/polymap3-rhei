@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.polymap.rhei.form.pageProviders">
+      <pageProvider
+            class="org.polymap.rhei.script.form.ScriptFormPageProvider"
+            id="org.polymap.rhei.script.ScriptFormPageProvider"
+            name="ScriptFormPageProvider">
+      </pageProvider>
+   </extension>
+
+</plugin>
