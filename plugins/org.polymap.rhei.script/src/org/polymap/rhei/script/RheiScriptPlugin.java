@@ -36,31 +36,33 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 public class RheiScriptPlugin 
         extends AbstractUIPlugin {
 
-    private static Log log = LogFactory.getLog( RheiScriptPlugin.class );
+    private static Log              log       = LogFactory.getLog( RheiScriptPlugin.class );
 
-	// The plug-in ID
-	public static final String PLUGIN_ID = "org.polymap.rhei.script";
+    // The plug-in ID
+    public static final String      PLUGIN_ID = "org.polymap.rhei.script";
 
-	// The shared instance
-	private static RheiScriptPlugin plugin;
-	
+    // The shared instance
+    private static RheiScriptPlugin plugin;
 
-	public RheiScriptPlugin() {
-	}
 
-	public void start(BundleContext context) throws Exception {
-		super.start(context);
-		plugin = this;
-	}
+    public RheiScriptPlugin() {
+    }
 
-	public void stop(BundleContext context) throws Exception {
-		plugin = null;
-		super.stop(context);
-	}
+    public void start( BundleContext context )
+    throws Exception {
+        super.start( context );
+        plugin = this;
+    }
 
-	public static RheiScriptPlugin getDefault() {
-		return plugin;
-	}
+    public void stop( BundleContext context )
+    throws Exception {
+        plugin = null;
+        super.stop( context );
+    }
+
+    public static RheiScriptPlugin getDefault() {
+        return plugin;
+    }
 
 	public Image imageForDescriptor( ImageDescriptor imageDescriptor, String key ) {
         ImageRegistry images = getImageRegistry();
