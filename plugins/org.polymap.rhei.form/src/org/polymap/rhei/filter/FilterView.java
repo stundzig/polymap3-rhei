@@ -68,7 +68,7 @@ public class FilterView
 
     private static Log log = LogFactory.getLog( FilterView.class );
 
-    public static final String              ID = "org.polymap.rhei.form.FilterView";
+    public static final String              ID = "org.polymap.rhei.filter.FilterView";
     
     
     /**

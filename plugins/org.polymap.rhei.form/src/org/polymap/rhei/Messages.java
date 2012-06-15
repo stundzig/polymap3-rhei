@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2010, Polymap GmbH, and individual contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2012, Polymap GmbH. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,10 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
-
 package org.polymap.rhei;
 
 import org.eclipse.rwt.RWT;
@@ -26,11 +22,11 @@ import org.polymap.core.runtime.MessagesImpl;
  * 
  * 
  * @author <a href="http://www.polymap.de">Falko Braeutigam</a> 
- * @version $Revision: $
  */
 public class Messages {
 
-    private static final String BUNDLE_NAME = RheiFormPlugin.PLUGIN_ID + ".messages"; //$NON-NLS-1$
+    /* Plugin ID has changed, so this does not refer to actual PLUGIN_ID */
+    private static final String BUNDLE_NAME = "org.polymap.rhei.messages";
     
     private static final MessagesImpl   instance = new MessagesImpl( BUNDLE_NAME, Messages.class.getClassLoader() );
 

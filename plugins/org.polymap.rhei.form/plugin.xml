@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
-   <extension-point id="org.polymap.rhei.form.pageProviders" name="FormPageProviders" schema="schema/form.pageProviders.exsd"/>
-   <extension-point id="org.polymap.rhei.form.filterProviders" name="FilterProviders" schema="schema/form.filterProviders.exsd"/>
+   <extension-point id="org.polymap.rhei.form.pageProviders" name="FormPageProviders" schema="schema/pageProviders.exsd"/>
+   <extension-point id="org.polymap.rhei.form.filterProviders" name="FilterProviders" schema="schema/filterProviders.exsd"/>
    <extension
          point="org.eclipse.ui.views">
       <category
@@ -14,7 +14,7 @@
             category="org.polymap.rhei.ViewsCategory"
             class="org.polymap.rhei.filter.FilterView"
             icon="icons/eview16/filter_view.gif"
-            id="org.polymap.rhei.form.FilterView"
+            id="org.polymap.rhei.filter.FilterView"
             name="%FilterView_name"
             restorable="true">
       </view>
@@ -149,7 +149,7 @@
       <pageProvider
             class="org.polymap.rhei.internal.forms.StandardPageProvider"
             id="org.polymap.rhei.form.StandardPageProvider"
-            name="StandardPageProvider">
+            name="StandardPageProvider2">
       </pageProvider>
    </extension>
    <extension

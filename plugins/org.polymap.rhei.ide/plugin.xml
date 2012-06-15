@@ -31,14 +31,6 @@
       </editor>
    </extension>
    <extension
-         point="org.polymap.rhei.form.pageProviders">
-      <pageProvider
-            class="org.polymap.rhei.ide.form.ScriptFormPageProvider"
-            id="org.polymap.rhei.ide.ScriptFormPageProvider"
-            name="ScriptFormPageProvider">
-      </pageProvider>
-   </extension>
-   <extension
          point="org.eclipse.ui.perspectives">
       <perspective
             class="org.polymap.rhei.ide.IdePerspectiveFactory"
