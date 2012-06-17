@@ -17,6 +17,7 @@ package org.polymap.rhei.ide;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.io.Reader;
 import java.net.URL;
 
 import org.osgi.framework.BundleContext;
@@ -24,7 +25,6 @@ import org.osgi.framework.BundleContext;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.eclipse.swt.graphics.Image;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -45,9 +45,11 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.ui.JavadocContentAccess;
 
 import org.polymap.rhei.ide.java.JvmInstall;
 import org.polymap.rhei.ide.java.LibraryLocation;
@@ -191,6 +193,11 @@ public class RheiIdePlugin
                     log.info( "        line " + marker.getAttribute( IMarker.LINE_NUMBER )
                             + ": " + marker.getAttribute( IMarker.MESSAGE ) );
                 }
+                
+                // javadoc test
+                IMember member = cu.findPrimaryType(); //.getMethod( "finalize", new String[0] );
+                Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
+                log.info( "    JavaDoc: " + IOUtils.toString( reader ) );
             }
         }
         catch (Exception e) {
