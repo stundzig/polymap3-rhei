@@ -29,14 +29,14 @@ import org.eclipse.core.runtime.Path;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class JvmInstall {
+public class JREInstall {
 
-    private static Log log = LogFactory.getLog( JvmInstall.class );
+    private static Log log = LogFactory.getLog( JREInstall.class );
     
     private File            dir;
     
     
-    public JvmInstall( String dir ) {
+    public JREInstall( String dir ) {
         this.dir = new File( dir );
     }
 

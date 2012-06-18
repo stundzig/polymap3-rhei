@@ -24,7 +24,7 @@
       <editor
             class="org.polymap.rhei.ide.editor.ScriptEditor"
             default="false"
-            extensions="java, js, html"
+            extensions="java, js, html, classpath"
             icon="icons/eview16/script_editor.gif"
             id="org.polymap.rhei.ide.ScriptEditor"
             name="Script">
@@ -69,6 +69,17 @@
             </or>
          </triggerPoints>
       </navigatorContent>
+   </extension>
+   <extension
+         point="org.eclipse.jdt.core.classpathContainerInitializer">
+      <classpathContainerInitializer
+            class="org.polymap.rhei.ide.java.JREClasspathContainerInitializer"
+            id="org.polymap.rhei.ide.JRE_CONTAINER">
+      </classpathContainerInitializer>
+      <classpathContainerInitializer
+            class="org.polymap.rhei.ide.java.BundlesClasspathContainerInitializer"
+            id="org.polymap.rhei.ide.BUNDLES_CONTAINER">
+      </classpathContainerInitializer>
    </extension>
 
 </plugin>

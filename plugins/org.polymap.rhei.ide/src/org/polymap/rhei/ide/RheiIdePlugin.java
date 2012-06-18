@@ -14,9 +14,6 @@
  */
 package org.polymap.rhei.ide;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import java.io.Reader;
 import java.net.URL;
 
@@ -35,13 +32,10 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
@@ -51,9 +45,7 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.JavadocContentAccess;
 
-import org.polymap.rhei.ide.java.JvmInstall;
-import org.polymap.rhei.ide.java.LibraryLocation;
-import org.polymap.rhei.script.RheiScriptPlugin;
+import org.polymap.rhei.ide.java.JavaProjectInitializer;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -69,7 +61,7 @@ public class RheiIdePlugin
 	public static final String PLUGIN_ID = "org.polymap.rhei.ide";
 
 	// The shared instance
-	private static RheiIdePlugin plugin;
+	private static RheiIdePlugin   plugin;
 	
 
     public RheiIdePlugin() {
@@ -119,66 +111,25 @@ public class RheiIdePlugin
 	}
 
 
+	public IProject getScriptsProject() {
+        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+        IProject project = root.getProject( "Scripts" );
+        return project;	    
+	}
+	
+	
     protected void createScriptsProject() {
         try {
-            IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-            IProject project = root.getProject( "Scripts" );
-    
+            IProject project = getScriptsProject();
             // delete also ./.metadata/.plugins/org.eclipse.core.resources/.projects/Scripts/
             if (!project.exists()) {
-                //http://sdqweb.ipd.kit.edu/wiki/JDT_Tutorial:_Creating_Eclipse_Java_Projects_Programmatically
-                log.info( "Creating Scripts project..." );
-                project.create( null );
-                project.open( null );
-    
-                // create project
-                IProjectDescription description = project.getDescription();
-                description.setNatureIds( new String[] { JavaCore.NATURE_ID });
-                project.setDescription( description, null );
-                
-                // java project
-                IJavaProject javaProject = JavaCore.create( project ); 
-                
-                // src folder
-                IFolder sourceFolder = project.getFolder( "src" );
-                sourceFolder.create( false, true, null );
-                
-                // output folder
-                IFolder binFolder = project.getFolder( "build" );
-                binFolder.create( false, true, null );
-                javaProject.setOutputLocation( binFolder.getFullPath(), null );
-    
-                // classpath
-                List<IClasspathEntry> entries = new ArrayList();
-                JvmInstall jvm = new JvmInstall( "/home/falko/bin/jdk1.7.0_04" );
-                for (LibraryLocation elm : jvm.libraryLocations()) {
-                    entries.add( JavaCore.newLibraryEntry( elm.getLibraryPath(), elm.getSourcePath(), null ) );
-                }
-                // add VM libs to classpath
-                javaProject.setRawClasspath(
-                        entries.toArray( new IClasspathEntry[entries.size()] ), null );
-                
-                // add src to classpath
-                IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( sourceFolder );
-                IClasspathEntry[] oldEntries = javaProject.getRawClasspath();
-                IClasspathEntry[] newEntries = new IClasspathEntry[oldEntries.length + 1];
-                System.arraycopy( oldEntries, 0, newEntries, 0, oldEntries.length );
-                newEntries[oldEntries.length] = JavaCore.newSourceEntry( srcRoot.getPath() );
-                javaProject.setRawClasspath( newEntries, null );
-                
-                //IClasspathContainer con = JavaCore.new
-                
-                // copy test class
-                URL res = RheiScriptPlugin.getDefault().getBundle().getResource( "resources/TestFormPage.java" );
-                String code = IOUtils.toString( res.openStream(), "UTF-8" );
-                IPackageFragment pkg = srcRoot.createPackageFragment( "forms", false, null );
-                ICompilationUnit obj = pkg.createCompilationUnit( "forms/TestFormPage.java", code, false, null );
+                JavaProjectInitializer.initScriptsProject( project );
             }
             else {
-                project.open( null );
+                //project.open( null );
                 IJavaProject javaProject = JavaCore.create( project ); 
 
-                project.build( IncrementalProjectBuilder.FULL_BUILD, null );
+                //project.build( IncrementalProjectBuilder.FULL_BUILD, null );
                 
                 IFolder srcFolder = project.getFolder( "src" );
                 IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( srcFolder );
@@ -195,9 +146,9 @@ public class RheiIdePlugin
                 }
                 
                 // javadoc test
-                IMember member = cu.findPrimaryType(); //.getMethod( "finalize", new String[0] );
+                IMember member = cu.findPrimaryType().getMethod( "finalize", new String[0] );
                 Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
-                log.info( "    JavaDoc: " + IOUtils.toString( reader ) );
+                log.info( "    JavaDoc: " + (reader != null ? IOUtils.toString( reader ) : "nothing found") );
             }
         }
         catch (Exception e) {
@@ -214,5 +165,5 @@ public class RheiIdePlugin
                 true, IResource.DEPTH_INFINITE);
         return markers;
     }
-
+    
 }
