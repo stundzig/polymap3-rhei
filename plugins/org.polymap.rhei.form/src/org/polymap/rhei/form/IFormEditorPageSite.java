@@ -27,14 +27,20 @@ import org.polymap.rhei.field.IFormFieldValidator;
 import org.polymap.rhei.field.NullValidator;
 
 /**
- *
- *
+ * Provides the interface used inside {@link IFormEditorPage} methods to
+ * interact with the framework.
+ * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public interface IFormEditorPageSite {
 
-    public void setFormTitle( String string );
+    /**
+     * Specifies the title of this form page. The title is usually displayed
+     * in the tab of this page. So it should be human readable.
+     *
+     * @param title The title of this page. Must not be null.
+     */
+    public void setFormTitle( String title );
 
     public void setActivePage( String pageId );
 

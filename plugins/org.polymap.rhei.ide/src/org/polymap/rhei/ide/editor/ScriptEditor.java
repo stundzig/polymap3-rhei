@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -41,9 +43,15 @@ import org.eclipse.swt.widgets.Label;
 
 import org.eclipse.rwt.widgets.codemirror.CodeMirror;
 import org.eclipse.rwt.widgets.codemirror.LineMarker;
+import org.eclipse.rwt.widgets.codemirror.CodeMirror.TextSelection;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -61,8 +69,14 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 
 import org.polymap.core.project.ui.util.SimpleFormData;
+import org.polymap.core.runtime.ListenerList;
+import org.polymap.core.runtime.Polymap;
 import org.polymap.core.workbench.PolymapWorkbench;
 
 import org.polymap.rhei.ide.RheiIdePlugin;
@@ -75,7 +89,7 @@ import org.polymap.rhei.ide.RheiIdePlugin;
  */
 public class ScriptEditor
         extends EditorPart 
-        implements IEditorPart, IGotoMarker, IResourceChangeListener {
+        implements IEditorPart, IGotoMarker, IResourceChangeListener, ISelectionProvider {
 
     static Log log = LogFactory.getLog( ScriptEditor.class );
 
@@ -144,7 +158,13 @@ public class ScriptEditor
     
     private IMarker[]                   markers;
     
-    private Map<String,Object>          calculatorParams = new HashMap();      
+    private Map<String,Object>          calculatorParams = new HashMap();
+    
+    /** Listeners of this {@link ISelectionProvider}. */
+    private ListenerList<ISelectionChangedListener> selectionListeners = new ListenerList();
+
+    /** The current selection of this {@link ISelectionProvider}. */
+    private ISelection                  selection;
     
     
     public ScriptEditor() {
@@ -167,11 +187,15 @@ public class ScriptEditor
         super.setSite( _site );
         super.setInput( _input );
 
-        ResourcesPlugin.getWorkspace().addResourceChangeListener( this );
-
         setPartName( _input.getName() );
         //setContentDescription( "Script: " + name );
         setTitleToolTip( _input.getToolTipText() );
+
+        // listener to resource changes
+        ResourcesPlugin.getWorkspace().addResourceChangeListener( this );
+
+        // selection provider
+        getSite().setSelectionProvider( this );
 
         // submit action
         Action submitAction = new Action( i18n( "ScriptEditor_submit" ) ) {
@@ -285,6 +309,28 @@ public class ScriptEditor
         editor = new CodeMirror( content, SWT.NONE );
         editor.setLayoutData( new SimpleFormData().top( sep ).left( 0 ).right( 100 ).bottom( 100 ).create() );
         
+        editor.addPropertyChangeListener( new PropertyChangeListener() {
+            public void propertyChange( PropertyChangeEvent ev ) {
+                
+                if (ev.getPropertyName().equals( CodeMirror.PROP_CURSOR_POS )) {
+                    int pos = (Integer)ev.getNewValue();
+                    fireSelectionChanged( pos, pos );                    
+                }
+                else if (ev.getPropertyName().equals( CodeMirror.PROP_SELECTION )) {
+                    TextSelection sel = editor.getSelection();
+                    fireSelectionChanged( sel.getStart(), sel.getEnd() );
+                }
+                else if (ev.getPropertyName().equals( CodeMirror.PROP_TEXT )) {
+                    isDirty = true;
+                    Polymap.getSessionDisplay().asyncExec( new Runnable() {
+                        public void run() {
+                            firePropertyChange( PROP_DIRTY );
+                        }
+                    });
+                }
+            }
+        });
+        
         doLoad( new NullProgressMonitor() );
     }
 
@@ -326,6 +372,8 @@ public class ScriptEditor
             IFileEditorInput input = getEditorInput();
             InputStream in = new ByteArrayInputStream( editor.getText().getBytes( "UTF-8" ) );
             input.getFile().setContents( in, 0, monitor );
+            isDirty = false;
+            firePropertyChange( PROP_DIRTY );
         }
         catch (Exception e) {
             PolymapWorkbench.handleError( RheiIdePlugin.PLUGIN_ID, this, e.getLocalizedMessage(), e );
@@ -340,6 +388,7 @@ public class ScriptEditor
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             StreamUtils.copy( in, out );
             editor.setText( out.toString( "UTF-8" ) );
+            isDirty = false;
 
             updateMarkers();
         }
@@ -361,6 +410,59 @@ public class ScriptEditor
     }
 
     public void setFocus() {
+//        StructuredSelection sel = new StructuredSelection( getEditorInput().getFile() );
+//        SelectionChangedEvent ev = new SelectionChangedEvent( this, sel );
+//        for (ISelectionChangedListener l : selectionListeners) {
+//            l.selectionChanged( ev );
+//        }
+    }
+
+
+    // ISelectionProvider *********************************
+    
+    public void addSelectionChangedListener( ISelectionChangedListener listener ) {
+        selectionListeners.add( listener );
+    }
+
+    public void removeSelectionChangedListener( ISelectionChangedListener listener ) {
+        selectionListeners.remove( listener );
+    }
+
+    public ISelection getSelection() {
+        return selection;
+    }
+
+    public void setSelection( ISelection selection ) {
+        this.selection = selection;
+    }
+    
+    protected void fireSelectionChanged( int start, int end ) {
+        try {
+            // XXX refactor this into org.polymap.rhei.ide.java package
+            ICompilationUnit cu = (ICompilationUnit)JavaCore.create( getEditorInput().getFile() );
+            IJavaElement[] selectedJavaElements = cu.codeSelect( start, end-start );
+            if (selectedJavaElements.length > 0) {
+                if (selectedJavaElements.length > 1) {
+                    log.warn( "More than one Java elements selected: " + selectedJavaElements );
+                }
+                StructuredSelection sel = new StructuredSelection( selectedJavaElements[0] );
+
+                SelectionChangedEvent ev = new SelectionChangedEvent( this, sel );
+                for (ISelectionChangedListener l : selectionListeners) {
+                    l.selectionChanged( ev );
+                }
+                
+//                if (selectedJavaElements[0] instanceof IMember) {
+//                    ISourceRange name = ((IMember)selectedJavaElements[0]).getNameRange();
+//                    if (name != null) {
+//                        editor.setSelection( name.getOffset(), name.getOffset() + name.getLength() );
+//                    }
+//                }
+            }
+        }
+        catch (JavaModelException e) {
+            log.warn( e.getLocalizedMessage(), e );
+        }
     }
 
 }

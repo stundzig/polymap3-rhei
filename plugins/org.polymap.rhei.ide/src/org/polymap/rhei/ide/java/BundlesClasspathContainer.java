@@ -112,9 +112,9 @@ public class BundlesClasspathContainer
         for (Bundle bundle : bundles) {
             //http://lmap.blogspot.de/2008/03/platform-scheme-uri.html
             IPath pluginPath = Path.fromPortableString( "platform:/plugin/" + bundle.getSymbolicName() );
-            log.info( "Path: " + pluginPath );
+            log.debug( "Path: " + pluginPath );
             String loc = bundle.getLocation();
-            log.info( "Location: " + loc );
+            log.debug( "Location: " + loc );
             
             if (loc.contains( "/" )) {
                 // in development workspace
@@ -127,10 +127,11 @@ public class BundlesClasspathContainer
                     URL cpres = URI.create( pluginPath.append( ".classpath" ).toPortableString() ).toURL();
                     new PluginClasspathDecoder( cpres ).process( new EntryHandler() {
 
-                        public void handle( String kind, String path, String srcAttach, String javadoc ) {
-                            log.info( "   entry: " + path );
+                        public void handle( String kind, String path, String srcPath, String javadoc ) {
+                            log.debug( "   entry: " + path );
                             if (kind.equals( "output")) {
-                                result.add( JavaCore.newLibraryEntry( filePath.append( path ), null, null ) );
+                                result.add( JavaCore.newLibraryEntry( 
+                                        filePath.append( path ), filePath.append( srcPath ), null ) );
                             }
                             else if (kind.equals( "lib")) {
                                 result.add( JavaCore.newLibraryEntry( filePath.append( path ), null, null ) );                                
@@ -138,6 +139,7 @@ public class BundlesClasspathContainer
                         }
                     });
                 }
+                // plugin jar
                 else {
                     String home = System.getProperty( "eclipse.home.location" );
                     
@@ -146,7 +148,7 @@ public class BundlesClasspathContainer
                     
                     final IPath filePath = Path.fromOSString( StringUtils.substringAfter( home, "file:" ) )
                            .append( Path.fromOSString( rawPluginPath ).makeAbsolute() );
-                    log.info( "   plugin path: " + filePath );                                
+                    log.debug( "   plugin path: " + filePath );                                
                     result.add( JavaCore.newLibraryEntry( filePath, null, null ) );                                
                 }
             }

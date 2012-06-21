@@ -27,7 +27,6 @@ import org.eclipse.jface.action.Action;
  * elements and/or submit/load, then implement the {@link IFormEditorPage2} interface.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public interface IFormEditorPage {
 
@@ -45,6 +44,20 @@ public interface IFormEditorPage {
     
     String getId();
     
+    /**
+     * Creates the user interface of this form page.
+     * <p>
+     * <b>Example code:</b>
+     * <pre>
+     *    site.setFormTitle( "Title" );
+     *    site.getPageBody().setLayout( new FormLayout() );
+     *
+     *    Composite field = site.newFormFiel( null, "", new TextFormField(), null );
+     *    field.setLayoutData( layoutData );
+     * </pre>
+     *
+     * @param site The API to create fields and interact with the framework.
+     */
     void createFormContent( IFormEditorPageSite site );
 
 }

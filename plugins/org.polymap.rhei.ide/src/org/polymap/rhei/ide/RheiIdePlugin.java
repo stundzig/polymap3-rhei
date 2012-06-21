@@ -18,6 +18,9 @@ import java.io.Reader;
 import java.net.URL;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.http.HttpService;
+import org.osgi.util.tracker.ServiceTracker;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -44,7 +47,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.JavadocContentAccess;
-
 import org.polymap.rhei.ide.java.JavaProjectInitializer;
 
 /**
@@ -62,6 +64,8 @@ public class RheiIdePlugin
 
 	// The shared instance
 	private static RheiIdePlugin   plugin;
+
+    private ServiceTracker         httpServiceTracker;
 	
 
     public RheiIdePlugin() {
@@ -73,12 +77,27 @@ public class RheiIdePlugin
 		plugin = this;
 		
 		createScriptsProject();
+		
+        httpServiceTracker = new ServiceTracker( context, HttpService.class.getName(), null ) {
+            public Object addingService( ServiceReference reference ) {
+                try {
+                    HttpService httpService = (HttpService)super.addingService( reference );
+                    httpService.registerResources( "/rhei-ide-icons", "/icons", null );
+                    return httpService;
+                }
+                catch (Exception e) {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+        httpServiceTracker.open();
 	}
 
 	
 	public void stop( BundleContext context ) throws Exception {
 		plugin = null;
-		super.stop(context);
+		httpServiceTracker.close();
+		super.stop( context );
 	}
 
 	

@@ -61,7 +61,8 @@ public class PluginClasspathDecoder {
 
                     String kind = node.getAttribute( ClasspathEntry.TAG_KIND );
                     String path = node.getAttribute( ClasspathEntry.TAG_PATH );
-                    handler.handle( kind, path, null, null );
+                    String srcPath = node.getAttribute( ClasspathEntry.TAG_SOURCEPATH );
+                    handler.handle( kind, path, srcPath, null );
                 }
             }
     }

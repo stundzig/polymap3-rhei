@@ -18,6 +18,13 @@
             name="Projects"
             restorable="true">
       </view>
+      <view
+            allowMultiple="false"
+            class="org.polymap.rhei.ide.java.JavadocView2"
+            id="org.polymap.rhei.ide.JavaDocView"
+            name="JavaDoc"
+            restorable="true">
+      </view>
    </extension>
    <extension
          point="org.eclipse.ui.editors">
