@@ -36,8 +36,7 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaModelMarker;
@@ -48,6 +47,7 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.JavadocContentAccess;
 import org.polymap.rhei.ide.java.JavaProjectInitializer;
+import org.polymap.rhei.script.RheiScriptPlugin;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -76,7 +76,7 @@ public class RheiIdePlugin
 		super.start( context );
 		plugin = this;
 		
-		createScriptsProject();
+		initScriptsProject();
 		
         httpServiceTracker = new ServiceTracker( context, HttpService.class.getName(), null ) {
             public Object addingService( ServiceReference reference ) {
@@ -130,45 +130,35 @@ public class RheiIdePlugin
 	}
 
 
-	public IProject getScriptsProject() {
-        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-        IProject project = root.getProject( "Scripts" );
-        return project;	    
-	}
-	
-	
-    protected void createScriptsProject() {
+    protected void initScriptsProject() {
         try {
-            IProject project = getScriptsProject();
-            // delete also ./.metadata/.plugins/org.eclipse.core.resources/.projects/Scripts/
-            if (!project.exists()) {
-                JavaProjectInitializer.initScriptsProject( project );
-            }
-            else {
-                //project.open( null );
-                IJavaProject javaProject = JavaCore.create( project ); 
+            IProject project = RheiScriptPlugin.getOrCreateScriptProject();
 
-                //project.build( IncrementalProjectBuilder.FULL_BUILD, null );
-                
-                IFolder srcFolder = project.getFolder( "src" );
-                IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( srcFolder );
+            JavaProjectInitializer.initScriptsProject( project );
 
-                IPackageFragment pkg = srcRoot.getPackageFragment( "forms" );
-                ICompilationUnit cu = pkg.getCompilationUnit( "TestFormPage.java" );
-                log.info( "CompilationUnit: "  + cu );
-                cu.open( null );
-                log.info( "   primaryType: " + cu.findPrimaryType() );
-                log.info( "   markers:" );
-                for (IMarker marker : findJavaProblemMarkers( cu )) {
-                    log.info( "        line " + marker.getAttribute( IMarker.LINE_NUMBER )
-                            + ": " + marker.getAttribute( IMarker.MESSAGE ) );
-                }
-                
-                // javadoc test
-                IMember member = cu.findPrimaryType().getMethod( "finalize", new String[0] );
-                Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
-                log.info( "    JavaDoc: " + (reader != null ? IOUtils.toString( reader ) : "nothing found") );
+            // some debug/tests
+            IJavaProject javaProject = JavaCore.create( project ); 
+
+            project.build( IncrementalProjectBuilder.FULL_BUILD, null );
+
+            IFolder srcFolder = project.getFolder( "src" );
+            IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( srcFolder );
+
+            IPackageFragment pkg = srcRoot.getPackageFragment( "forms" );
+            ICompilationUnit cu = pkg.getCompilationUnit( "TestFormPage.java" );
+            log.info( "CompilationUnit: "  + cu );
+            cu.open( null );
+            log.info( "   primaryType: " + cu.findPrimaryType() );
+            log.info( "   markers:" );
+            for (IMarker marker : findJavaProblemMarkers( cu )) {
+                log.info( "        line " + marker.getAttribute( IMarker.LINE_NUMBER )
+                        + ": " + marker.getAttribute( IMarker.MESSAGE ) );
             }
+
+            // javadoc test
+            IMember member = cu.findPrimaryType().getMethod( "finalize", new String[0] );
+            Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
+            log.info( "    JavaDoc: " + (reader != null ? IOUtils.toString( reader ) : "nothing found") );
         }
         catch (Exception e) {
             throw new RuntimeException( e );

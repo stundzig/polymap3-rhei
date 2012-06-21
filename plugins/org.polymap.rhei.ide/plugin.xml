@@ -21,6 +21,7 @@
       <view
             allowMultiple="false"
             class="org.polymap.rhei.ide.java.JavadocView2"
+            icon="icons/eview16/javadoc.gif"
             id="org.polymap.rhei.ide.JavaDocView"
             name="JavaDoc"
             restorable="true">

@@ -28,6 +28,14 @@ import org.eclipse.jface.resource.ImageRegistry;
 
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+
+import org.polymap.core.workbench.PolymapWorkbench;
+
 /**
  * The activator class controls the plug-in life cycle
  *
@@ -45,6 +53,41 @@ public class RheiScriptPlugin
     private static RheiScriptPlugin plugin;
 
 
+    /**
+     * Returns the {@link IProject} containing all the scripts. If it does not exist
+     * then it is created. The project is stored under "<workspace>/Scripts" If it
+     * does not exists.
+     * <p/>
+     * This instance id shared by all sessions.
+     * 
+     * @return The Scripts project.
+     */
+    public static IProject getOrCreateScriptProject() {
+        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+        IProject project = root.getProject( "Scripts" );
+        
+        if (!project.exists()) {
+            try {
+                // delete also ./.metadata/.plugins/org.eclipse.core.resources/.projects/Scripts/
+                project.create( null );
+                project.open( null );
+    
+                IFolder srcFolder = project.getFolder( "src" );
+                srcFolder.create( false, true, null );
+
+                IFolder formsFolder = project.getFolder( "src/forms" );
+                formsFolder.create( false, true, null );
+            }
+            catch (CoreException e) {
+                PolymapWorkbench.handleError( RheiScriptPlugin.PLUGIN_ID, null, e.getLocalizedMessage(), e );
+            }
+        }
+        return project;
+    }
+
+    
+    // instance *******************************************
+    
     public RheiScriptPlugin() {
     }
 
@@ -85,5 +128,5 @@ public class RheiScriptPlugin
         }
         return image;
 	}
-
+	
 }

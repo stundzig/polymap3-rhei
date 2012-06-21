@@ -15,5 +15,6 @@ Bundle-ActivationPolicy: lazy
 Bundle-Localization: plugin
 Bundle-ClassPath: .,
  lib-static/bsh-2.1b5.jar
-Export-Package: org.polymap.rhei.script
+Export-Package: org.polymap.rhei.script,
+ org.polymap.rhei.script.java
 

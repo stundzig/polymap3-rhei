@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -59,43 +60,44 @@ public class JavaProjectInitializer {
     public static void initScriptsProject( IProject project ) 
     throws CoreException, IOException {
         //http://sdqweb.ipd.kit.edu/wiki/JDT_Tutorial:_Creating_Eclipse_Java_Projects_Programmatically
-        log.info( "Creating Scripts project..." );
-        project.create( null );
-        project.open( null );
-
-        // create project
         IProjectDescription description = project.getDescription();
-        description.setNatureIds( new String[] { JavaCore.NATURE_ID });
-        project.setDescription( description, null );
+        
+        String[] natureIds = description.getNatureIds();
+        
+        if (!ArrayUtils.contains( natureIds, JavaCore.NATURE_ID )) {
+            description.setNatureIds( (String[])ArrayUtils.add( natureIds, JavaCore.NATURE_ID ) );
+            project.setDescription( description, null );
 
-        // java project
-        IJavaProject javaProject = JavaCore.create( project ); 
+            // java project
+            IJavaProject javaProject = JavaCore.create( project ); 
 
-        // src folder
-        IFolder sourceFolder = project.getFolder( "src" );
-        sourceFolder.create( false, true, null );
-        IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( sourceFolder );
+            // src folder
+            IFolder sourceFolder = project.getFolder( "src" );
+            sourceFolder.create( false, true, null );
+            IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( sourceFolder );
 
-        // output folder
-        IFolder binFolder = project.getFolder( "build" );
-        binFolder.create( false, true, null );
-        javaProject.setOutputLocation( binFolder.getFullPath(), null );
+            // output folder
+            IFolder binFolder = project.getFolder( "build" );
+            binFolder.create( false, true, null );
+            javaProject.setOutputLocation( binFolder.getFullPath(), null );
 
-        // classpath: JRE cont, bundles cont, src
-        List<IClasspathEntry> entries = new ArrayList();
-        entries.add( JavaCore.newContainerEntry( new Path( 
-                JREClasspathContainerInitializer.ID ) ) );
-        entries.add( JavaCore.newContainerEntry( new Path( 
-                BundlesClasspathContainerInitializer.ID ) ) );
-        entries.add( JavaCore.newSourceEntry( srcRoot.getPath() ) );
-        // set classpath
-        javaProject.setRawClasspath(
-                entries.toArray( new IClasspathEntry[entries.size()] ), null );
+            // classpath: JRE cont, bundles cont, src
+            List<IClasspathEntry> entries = new ArrayList();
+            entries.add( JavaCore.newContainerEntry( new Path( 
+                    JREClasspathContainerInitializer.ID ) ) );
+            entries.add( JavaCore.newContainerEntry( new Path( 
+                    BundlesClasspathContainerInitializer.ID ) ) );
+            entries.add( JavaCore.newSourceEntry( srcRoot.getPath() ) );
+            // set classpath
+            javaProject.setRawClasspath(
+                    entries.toArray( new IClasspathEntry[entries.size()] ), null );
 
-        // copy test class
-        URL res = RheiScriptPlugin.getDefault().getBundle().getResource( "resources/TestFormPage.java" );
-        String code = IOUtils.toString( res.openStream(), "UTF-8" );
-        IPackageFragment pkg = srcRoot.createPackageFragment( "forms", false, null );
-        ICompilationUnit obj = pkg.createCompilationUnit( "forms/TestFormPage.java", code, false, null );
+            // copy test class
+            URL res = RheiScriptPlugin.getDefault().getBundle().getResource( "resources/TestFormPage.java" );
+            String code = IOUtils.toString( res.openStream(), "UTF-8" );
+            IPackageFragment pkg = srcRoot.createPackageFragment( "forms", false, null );
+            ICompilationUnit obj = pkg.createCompilationUnit( "forms/TestFormPage.java", code, false, null );
+        }
     }
+    
 }

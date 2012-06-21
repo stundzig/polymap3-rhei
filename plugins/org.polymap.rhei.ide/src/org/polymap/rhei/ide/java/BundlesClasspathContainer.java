@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URL;
 
 import org.osgi.framework.Bundle;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,6 +31,8 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IClasspathContainer;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.JavaCore;
+
+import org.polymap.core.runtime.Timer;
 
 import org.polymap.rhei.ide.RheiIdePlugin;
 import org.polymap.rhei.ide.java.PluginClasspathDecoder.EntryHandler;
@@ -85,27 +88,14 @@ public class BundlesClasspathContainer
             catch (Exception e) {
                 log.warn( "", e );
             }
-            
         }
-        return entries;
+        return entries; 
     }
 
-//    public IClasspathEntry[] computeEntries2() {
-//        List<IClasspathEntry> result = new ArrayList();
-//        
-//        // find all jars
-//        for (Object elm : FileUtils.listFiles( homeDir, new String[] {"jar"}, true )) {
-//            File jarFile = (File)elm;
-//            //log.info( "Bundle: " + jarFile );
-//            result.add( JavaCore.newProjectEntry( 
-//                    new Path( jarFile.getAbsolutePath() )/*, null, null*/ ) );
-//        }
-//        return result.toArray( new IClasspathEntry[ result.size() ] );
-//    }
-    
     
     private IClasspathEntry[] computePluginEntries() 
     throws Exception {
+        Timer timer = new Timer();
         final List<IClasspathEntry> result = new ArrayList();
         
         Bundle[] bundles = RheiIdePlugin.getDefault().getBundle().getBundleContext().getBundles();
@@ -153,6 +143,7 @@ public class BundlesClasspathContainer
                 }
             }
         }
+        log.info( "Classpath computed. (" + timer.elapsedTime() + ")" );
         return result.toArray( new IClasspathEntry[ result.size() ] );
     }
 

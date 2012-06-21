@@ -27,12 +27,24 @@ import org.eclipse.jface.action.Action;
 public abstract class DefaultFormEditorPage
         implements IFormEditorPage {
 
+    /**
+     * The ID of this form.
+     */
     protected String                id;
     
+    /**
+     * The title of this form.
+     */
     protected String                title;
     
+    /**
+     * The feature that is shown in this form.
+     */
     protected Feature               feature;
 
+    /**
+     * The {@link FeatureStore} of the {@link #feature} of this form.
+     */
     protected FeatureStore          fs;
 
     

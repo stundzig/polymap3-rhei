@@ -61,7 +61,7 @@ public class FormEditorInput
 
     private static Log log = LogFactory.getLog( FormEditorInput.class );
 
-    public static final String  FACTORY_ID = "org.polymap.rhei.FormEditorInputFactory";
+    public static final String  FACTORY_ID = "org.polymap.rhei.form.FormEditorInputFactory";
 
     private FeatureStore        fs;
     

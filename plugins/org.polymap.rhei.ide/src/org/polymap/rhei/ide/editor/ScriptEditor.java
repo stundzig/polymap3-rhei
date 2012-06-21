@@ -266,8 +266,9 @@ public class ScriptEditor
             editor.lineMarkers().clear();
             IMarker[] newMarkers = getEditorInput().getFile().findMarkers( null, true, 1 );
             for (IMarker marker : newMarkers) {
-                editor.lineMarkers().put( new LineMarker()
+                editor.lineMarkers().put( new LineMarker( String.valueOf( marker.getId() ) )
                         .setLine( marker.getAttribute( IMarker.LINE_NUMBER, 0 ) )
+                        .setCharPos( marker.getAttribute( IMarker.CHAR_START, 0 ), marker.getAttribute( IMarker.CHAR_END, 0 ) )
                         .setText( marker.getAttribute( IMarker.MESSAGE, "" ) ) );
             }
             markers = newMarkers;
@@ -309,6 +310,7 @@ public class ScriptEditor
         editor = new CodeMirror( content, SWT.NONE );
         editor.setLayoutData( new SimpleFormData().top( sep ).left( 0 ).right( 100 ).bottom( 100 ).create() );
         
+        // editor property changes
         editor.addPropertyChangeListener( new PropertyChangeListener() {
             public void propertyChange( PropertyChangeEvent ev ) {
                 
@@ -327,6 +329,9 @@ public class ScriptEditor
                             firePropertyChange( PROP_DIRTY );
                         }
                     });
+                }
+                else if (ev.getPropertyName().equals( CodeMirror.PROP_SAVE )) {
+                    doSave( null );
                 }
             }
         });
@@ -373,7 +378,11 @@ public class ScriptEditor
             InputStream in = new ByteArrayInputStream( editor.getText().getBytes( "UTF-8" ) );
             input.getFile().setContents( in, 0, monitor );
             isDirty = false;
-            firePropertyChange( PROP_DIRTY );
+            Polymap.getSessionDisplay().asyncExec( new Runnable() {
+                public void run() {
+                    firePropertyChange( PROP_DIRTY );
+                }
+            });
         }
         catch (Exception e) {
             PolymapWorkbench.handleError( RheiIdePlugin.PLUGIN_ID, this, e.getLocalizedMessage(), e );
@@ -440,24 +449,26 @@ public class ScriptEditor
         try {
             // XXX refactor this into org.polymap.rhei.ide.java package
             ICompilationUnit cu = (ICompilationUnit)JavaCore.create( getEditorInput().getFile() );
-            IJavaElement[] selectedJavaElements = cu.codeSelect( start, end-start );
-            if (selectedJavaElements.length > 0) {
-                if (selectedJavaElements.length > 1) {
-                    log.warn( "More than one Java elements selected: " + selectedJavaElements );
-                }
-                StructuredSelection sel = new StructuredSelection( selectedJavaElements[0] );
+            if (cu != null) {
+                IJavaElement[] selectedJavaElements = cu.codeSelect( start, end-start );
+                if (selectedJavaElements.length > 0) {
+                    if (selectedJavaElements.length > 1) {
+                        log.warn( "More than one Java elements selected: " + selectedJavaElements );
+                    }
+                    StructuredSelection sel = new StructuredSelection( selectedJavaElements[0] );
 
-                SelectionChangedEvent ev = new SelectionChangedEvent( this, sel );
-                for (ISelectionChangedListener l : selectionListeners) {
-                    l.selectionChanged( ev );
+                    SelectionChangedEvent ev = new SelectionChangedEvent( this, sel );
+                    for (ISelectionChangedListener l : selectionListeners) {
+                        l.selectionChanged( ev );
+                    }
+
+                    //                if (selectedJavaElements[0] instanceof IMember) {
+                    //                    ISourceRange name = ((IMember)selectedJavaElements[0]).getNameRange();
+                    //                    if (name != null) {
+                    //                        editor.setSelection( name.getOffset(), name.getOffset() + name.getLength() );
+                    //                    }
+                    //                }
                 }
-                
-//                if (selectedJavaElements[0] instanceof IMember) {
-//                    ISourceRange name = ((IMember)selectedJavaElements[0]).getNameRange();
-//                    if (name != null) {
-//                        editor.setSelection( name.getOffset(), name.getOffset() + name.getLength() );
-//                    }
-//                }
             }
         }
         catch (JavaModelException e) {
