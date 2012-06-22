@@ -89,5 +89,20 @@
             id="org.polymap.rhei.ide.BUNDLES_CONTAINER">
       </classpathContainerInitializer>
    </extension>
+   <extension
+         point="org.eclipse.ui.decorators">
+      <decorator
+            class="org.polymap.rhei.ide.navigator.MarkerResourceDecorator"
+            id="org.polymap.rhei.ide.MarkerResourceDecorator"
+            label="Markers"
+            lightweight="true"
+            state="true">
+         <enablement>
+            <objectClass
+                  name="org.eclipse.core.resources.IResource">
+            </objectClass>
+         </enablement>
+      </decorator>
+   </extension>
 
 </plugin>
