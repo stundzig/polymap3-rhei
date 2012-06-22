@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.rhei.ide.project;
+package org.polymap.rhei.ide.navigator;
 
 import org.eclipse.swt.graphics.Image;
 

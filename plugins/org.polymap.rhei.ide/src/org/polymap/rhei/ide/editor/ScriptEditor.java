@@ -17,6 +17,7 @@ package org.polymap.rhei.ide.editor;
 import static org.polymap.rhei.ide.Messages.i18n;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,10 +59,12 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.ide.IGotoMarker;
 import org.eclipse.ui.part.EditorPart;
 
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
@@ -72,18 +75,19 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
-
 import org.polymap.core.project.ui.util.SimpleFormData;
 import org.polymap.core.runtime.ListenerList;
 import org.polymap.core.runtime.Polymap;
 import org.polymap.core.workbench.PolymapWorkbench;
 
+import org.polymap.rhei.ide.MarkerSelectionStatusLineAdapter;
 import org.polymap.rhei.ide.RheiIdePlugin;
 
 /**
  * 
- *
+ * <p/>
+ * Open a new editor via one of the {@link IDE#openEditor()} methods.
+ * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  * @since 1.0
  */
@@ -94,57 +98,6 @@ public class ScriptEditor
     static Log log = LogFactory.getLog( ScriptEditor.class );
 
     public static final String          ID = "org.polymap.rhei.ide.ScriptEditor";
-    
-    
-//    public static ScriptEditor open( IFile file ) {
-//        try {
-//            return open( file.getLocationURI().toURL(), file.getFileExtension() );
-//        }
-//        catch (MalformedURLException e) {
-//            throw new RuntimeException( e );
-//        }
-//    }
-//
-//
-//    /**
-//     *
-//     * @return The editor of the given script URL, or null.
-//     */
-//    public static ScriptEditor open( URL scriptUrl, String lang ) {
-//        try {
-//            log.debug( "open(): URL= " + scriptUrl );
-//            ScriptEditorInput input = new ScriptEditorInput( scriptUrl, lang );
-//
-//            // check current editors
-//            IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-//            IEditorReference[] editors = page.getEditorReferences();
-//            for (IEditorReference reference : editors) {
-//                IEditorInput cursor = reference.getEditorInput();
-//                if (cursor instanceof ScriptEditorInput) {
-//                    log.debug( "        editor: " + cursor );
-//                }
-//                if (cursor.equals( input )) {
-//                    Object previous = page.getActiveEditor();
-//                    page.activate( reference.getPart( true ) );
-//                    return (ScriptEditor)reference.getEditor( false );
-//                }
-//            }
-//
-//            // not found -> open new editor
-//            IEditorPart part = page.openEditor( input, input.getEditorId(), true,
-//                    IWorkbenchPage.MATCH_NONE );
-//            log.debug( "editor= " + part );
-//            // might be ErrorEditorPart
-//            return part instanceof ScriptEditor ? (ScriptEditor)part : null;
-//        }
-//        catch (PartInitException e) {
-//            PolymapWorkbench.handleError( RheiIdePlugin.PLUGIN_ID, null, e.getMessage(), e );
-//            return null;
-//        }
-//    }
-
-    
-    // instance *******************************************
     
     private List<Action>                actions = new ArrayList();
 
@@ -196,7 +149,11 @@ public class ScriptEditor
 
         // selection provider
         getSite().setSelectionProvider( this );
-
+        
+        // contribute marker selections to status line
+        addSelectionChangedListener( new MarkerSelectionStatusLineAdapter(
+                getEditorSite().getActionBars().getStatusLineManager() ) );
+        
         // submit action
         Action submitAction = new Action( i18n( "ScriptEditor_submit" ) ) {
             public void run() {
@@ -264,7 +221,7 @@ public class ScriptEditor
     protected void updateMarkers() {
         try {
             editor.lineMarkers().clear();
-            IMarker[] newMarkers = getEditorInput().getFile().findMarkers( null, true, 1 );
+            IMarker[] newMarkers = getEditorInput().getFile().findMarkers( null, true, IResource.DEPTH_ZERO );
             for (IMarker marker : newMarkers) {
                 editor.lineMarkers().put( new LineMarker( String.valueOf( marker.getId() ) )
                         .setLine( marker.getAttribute( IMarker.LINE_NUMBER, 0 ) )
@@ -445,23 +402,24 @@ public class ScriptEditor
         this.selection = selection;
     }
     
+    /**
+     * Finds the Java element and markers at the given position in the text
+     * and fires a {@link SelectionChangedEvent} to our listeners.
+     *
+     * @param start Start position of the text selection.
+     * @param end End position of the text selection.
+     */
     protected void fireSelectionChanged( int start, int end ) {
         try {
-            // XXX refactor this into org.polymap.rhei.ide.java package
+            List elms = new ArrayList();
+            
+            // find Java element at position
+            // XXX refactor this into java package
             ICompilationUnit cu = (ICompilationUnit)JavaCore.create( getEditorInput().getFile() );
             if (cu != null) {
-                IJavaElement[] selectedJavaElements = cu.codeSelect( start, end-start );
-                if (selectedJavaElements.length > 0) {
-                    if (selectedJavaElements.length > 1) {
-                        log.warn( "More than one Java elements selected: " + selectedJavaElements );
-                    }
-                    StructuredSelection sel = new StructuredSelection( selectedJavaElements[0] );
-
-                    SelectionChangedEvent ev = new SelectionChangedEvent( this, sel );
-                    for (ISelectionChangedListener l : selectionListeners) {
-                        l.selectionChanged( ev );
-                    }
-
+                IJavaElement[] javaElms = cu.codeSelect( start, end-start );
+                elms.addAll( Arrays.asList( javaElms ) );
+                if (javaElms.length > 0) {
                     //                if (selectedJavaElements[0] instanceof IMember) {
                     //                    ISourceRange name = ((IMember)selectedJavaElements[0]).getNameRange();
                     //                    if (name != null) {
@@ -470,8 +428,25 @@ public class ScriptEditor
                     //                }
                 }
             }
+            // find markers at position
+            for (IMarker marker : markers) {
+                int markerStart = marker.getAttribute( IMarker.CHAR_START, 0 );
+                int markerEnd = marker.getAttribute( IMarker.CHAR_END, 0 );
+                if (start >= markerStart && end <= markerEnd) {
+                    elms.add( marker );
+                }
+            }
+            // fire event
+            if (!elms.isEmpty()) {
+                StructuredSelection sel = new StructuredSelection( elms );
+                SelectionChangedEvent ev = new SelectionChangedEvent( this, sel );
+                for (ISelectionChangedListener l : selectionListeners) {
+                    l.selectionChanged( ev );
+                }
+            }
         }
-        catch (JavaModelException e) {
+        catch (CoreException e) {
+            // just log, no UI message
             log.warn( e.getLocalizedMessage(), e );
         }
     }

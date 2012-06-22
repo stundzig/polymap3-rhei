@@ -62,6 +62,8 @@ public class RheiIdePlugin
     // The plug-in ID
 	public static final String PLUGIN_ID = "org.polymap.rhei.ide";
 
+	public static final String BUILD_FOLDER_NAME = "build";
+	
 	// The shared instance
 	private static RheiIdePlugin   plugin;
 

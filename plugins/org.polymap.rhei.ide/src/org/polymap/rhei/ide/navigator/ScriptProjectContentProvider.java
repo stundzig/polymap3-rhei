@@ -12,16 +12,23 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.rhei.ide.project;
+package org.polymap.rhei.ide.navigator;
+
+import static java.util.Arrays.asList;
+import java.util.List;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.base.Predicate;
+import static com.google.common.collect.Collections2.filter;
+
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 
 import org.polymap.core.workbench.PolymapWorkbench;
@@ -50,7 +57,13 @@ public class ScriptProjectContentProvider
     public Object[] getChildren( Object elm ) {
         try {
             if (elm instanceof IContainer) {
-                return ((IContainer)elm).members();
+                List<IResource> members = asList( ((IContainer)elm).members() );
+                // filter build folder
+                return filter( members, new Predicate<IResource>() {
+                    public boolean apply( IResource member ) {
+                        return !member.getName().equals( RheiIdePlugin.BUILD_FOLDER_NAME );
+                    }
+                }).toArray();
             }
         }
         catch (CoreException e) {
@@ -61,11 +74,12 @@ public class ScriptProjectContentProvider
 
 
     public boolean hasChildren( Object elm ) {
-        return getChildren(elm) != null;
+        return getChildren( elm ).length > 0;
     }
     
+    
     public Object[] getElements( Object elm ) {
-        return getChildren(elm);
+        return getChildren( elm );
     }
     
     

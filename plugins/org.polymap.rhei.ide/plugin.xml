@@ -12,10 +12,10 @@
             restorable="false">
       </view>
       <view
-            class="org.polymap.rhei.ide.project.ProjectNavigator"
+            class="org.polymap.rhei.ide.navigator.ProjectNavigator"
             icon="icons/eview16/script_editor.gif"
             id="org.polymap.rhei.ProjectNavigator"
-            name="Projects"
+            name="Scripts"
             restorable="true">
       </view>
       <view
@@ -64,9 +64,9 @@
          point="org.eclipse.rap.ui.navigator.navigatorContent">
       <navigatorContent
             activeByDefault="true"
-            contentProvider="org.polymap.rhei.ide.project.ScriptProjectContentProvider"
+            contentProvider="org.polymap.rhei.ide.navigator.ScriptProjectContentProvider"
             id="org.polymap.rhei.workbench.scriptsContent"
-            labelProvider="org.polymap.rhei.ide.project.ScriptProjectLabelProvider"
+            labelProvider="org.polymap.rhei.ide.navigator.ScriptProjectLabelProvider"
             name="Scripts"
             priority="highest">
          <triggerPoints>

@@ -80,8 +80,13 @@ public class JavadocView2
             public void selectionChanged( IWorkbenchPart part, ISelection sel ) {
                 log.info( "selection: " + sel + " on: " + part );
                 if (sel instanceof IStructuredSelection) {
-                    Object elm = ((IStructuredSelection)sel).getFirstElement();
-                    new UpdateContentJob( elm ).schedule();
+                    for (Object elm : ((IStructuredSelection)sel).toList()) {
+                        UpdateContentJob job = new UpdateContentJob( elm );
+                        if (job.canRun()) {
+                            job.schedule();
+                            break;  // show just the first found IMember
+                        }
+                    }
                 }
             }
         };
@@ -121,19 +126,16 @@ public class JavadocView2
     class UpdateContentJob
             extends UIJob {
 
-        private Object          elm;
+        private IMember     member;
         
-        
+        /**
+         * Finds the {@link IMember} for the given element.
+         */
         public UpdateContentJob( Object elm ) {
             super( "JavaDoc" );
             setPriority( SHORT );
-            this.elm = elm;
-        }
 
-        protected void runWithException( IProgressMonitor monitor )
-                throws Exception {
             // find IMember for selection
-            IMember member = null;                    
             if (elm instanceof IMember) {
                 member = (IMember)elm;
             }
@@ -146,26 +148,32 @@ public class JavadocView2
                     member = ((ICompilationUnit)javaElm).findPrimaryType();
                 }
             }
-            // update browser content
-            if (member != null) {
-                try {
-                    Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
-                    String html = reader != null ? IOUtils.toString( reader ) : "";
-                    
-                    final String pageHtml = createPageHtml( html, member );
-                    
-                    Polymap.getSessionDisplay().asyncExec( new Runnable() {
-                        public void run() {
-                            browser.setText( pageHtml );
-                        }
-                    });
-                }
-                catch (Exception e) {
-                    log.warn( e.getLocalizedMessage(), e );
-                }
+        }
+
+        public boolean canRun() { return member != null; }
+        
+        /**
+         * Updates the browser content. 
+         */
+        protected void runWithException( IProgressMonitor monitor )
+                throws Exception {
+            assert member != null;
+            try {
+                Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
+                String html = reader != null ? IOUtils.toString( reader ) : "";
+
+                final String pageHtml = createPageHtml( html, member );
+
+                Polymap.getSessionDisplay().asyncExec( new Runnable() {
+                    public void run() {
+                        browser.setText( pageHtml );
+                    }
+                });
+            }
+            catch (Exception e) {
+                log.warn( e.getLocalizedMessage(), e );
             }
         }
-        
         
         protected String createPageHtml( String docHtml, IMember member ) {
             String icon = "unknown_obj.gif";

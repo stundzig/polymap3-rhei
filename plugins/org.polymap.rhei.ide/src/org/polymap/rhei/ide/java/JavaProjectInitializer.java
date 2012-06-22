@@ -36,6 +36,8 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
+
+import org.polymap.rhei.ide.RheiIdePlugin;
 import org.polymap.rhei.script.RheiScriptPlugin;
 
 /**
@@ -77,7 +79,7 @@ public class JavaProjectInitializer {
             IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( sourceFolder );
 
             // output folder
-            IFolder binFolder = project.getFolder( "build" );
+            IFolder binFolder = project.getFolder( RheiIdePlugin.BUILD_FOLDER_NAME );
             binFolder.create( false, true, null );
             javaProject.setOutputLocation( binFolder.getFullPath(), null );
 

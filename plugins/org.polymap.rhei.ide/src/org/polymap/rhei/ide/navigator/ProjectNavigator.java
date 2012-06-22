@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.rhei.ide.project;
+package org.polymap.rhei.ide.navigator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -83,6 +83,7 @@ public class ProjectNavigator
 //            project.open( null );
             
             getCommonViewer().setInput( root );
+            getCommonViewer().expandToLevel( 3 );
             getCommonViewer().refresh();
         }
         catch (UnsatisfiedLinkError e) {
