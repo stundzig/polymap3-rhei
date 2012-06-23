@@ -17,11 +17,7 @@ package org.polymap.rhei.ide.editor;
 import static org.polymap.rhei.ide.Messages.i18n;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.ByteArrayInputStream;
@@ -31,7 +27,6 @@ import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.lf5.util.StreamUtils;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -58,6 +53,7 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.IPropertyListener;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.ide.IGotoMarker;
@@ -72,9 +68,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.JavaCore;
+
 import org.polymap.core.project.ui.util.SimpleFormData;
 import org.polymap.core.runtime.ListenerList;
 import org.polymap.core.runtime.Polymap;
@@ -84,7 +78,7 @@ import org.polymap.rhei.ide.MarkerSelectionStatusLineAdapter;
 import org.polymap.rhei.ide.RheiIdePlugin;
 
 /**
- * 
+ * Base implementation of a script code editor.
  * <p/>
  * Open a new editor via one of the {@link IDE#openEditor()} methods.
  * 
@@ -99,36 +93,20 @@ public class ScriptEditor
 
     public static final String          ID = "org.polymap.rhei.ide.ScriptEditor";
     
-    private List<Action>                actions = new ArrayList();
-
     private boolean                     isDirty;
     
-    private boolean                     isValid;
+    protected CodeMirror                editor;
     
-    private boolean                     actionsEnabled;
+    protected IMarker[]                 markers;
+    
+    protected List<Action>              actions = new ArrayList();
 
-    private CodeMirror                  editor;
-    
-    private IMarker[]                   markers;
-    
-    private Map<String,Object>          calculatorParams = new HashMap();
-    
     /** Listeners of this {@link ISelectionProvider}. */
-    private ListenerList<ISelectionChangedListener> selectionListeners = new ListenerList();
+    protected ListenerList<ISelectionChangedListener> selectionListeners = new ListenerList();
 
     /** The current selection of this {@link ISelectionProvider}. */
     private ISelection                  selection;
     
-    
-    public ScriptEditor() {
-    }
-
-    
-    public void setCalculatorParams( Map<String,Object> params ) {
-        this.calculatorParams.clear();    
-        this.calculatorParams.putAll( params );    
-    }
-
     
     public IFileEditorInput getEditorInput() {
         return (IFileEditorInput)super.getEditorInput();
@@ -155,7 +133,7 @@ public class ScriptEditor
                 getEditorSite().getActionBars().getStatusLineManager() ) );
         
         // submit action
-        Action submitAction = new Action( i18n( "ScriptEditor_submit" ) ) {
+        final Action submitAction = new Action( i18n( "ScriptEditor_submit" ) ) {
             public void run() {
                 try {
                     log.debug( "submitAction.run(): ..." );
@@ -172,7 +150,7 @@ public class ScriptEditor
         actions.add( submitAction );
 
         // revert action
-        Action revertAction = new Action( i18n( "ScriptEditor_revert" ) ) {
+        final Action revertAction = new Action( i18n( "ScriptEditor_revert" ) ) {
             public void run() {
                 log.debug( "revertAction.run(): ..." );
                 doLoad( new NullProgressMonitor() );
@@ -182,23 +160,17 @@ public class ScriptEditor
                 RheiIdePlugin.getDefault().getBundle().getResource( "icons/etool16/revert.gif" ) ) );
         revertAction.setToolTipText( i18n( "ScriptEditor_revertTip" ) );
         actions.add( revertAction );
-
-        // run action
-        actions.add( new RunScriptAction(this) );
+        
+        addPropertyListener( new IPropertyListener() {
+            public void propertyChanged( Object source, int propId ) {
+                if (propId == PROP_DIRTY) {
+                    submitAction.setEnabled( isDirty() );
+                    revertAction.setEnabled( isDirty() );
+                }
+            }
+        });
     }
 
-    
-    //        log.debug( "fieldChange(): dirty=" + isDirty + ", isValid=" + isValid );
-    //        boolean old = actionsEnabled;
-    //        actionsEnabled = isValid && isDirty;
-    //        if (actionsEnabled != old) {
-    //            for (Action action : standardPageActions) {
-    //                action.setEnabled( actionsEnabled );
-    //            }
-    //            editorDirtyStateChanged();
-    //        }
-    //    }
-    
     
     public void dispose() {
         super.dispose();
@@ -249,7 +221,7 @@ public class ScriptEditor
         // buttons
         for (final Action action : actions) {
             Button btn = new Button( buttonbar, SWT.PUSH );
-            // XX dispose images
+            // XXX dispose images
             btn.setImage( action.getImageDescriptor().createImage( true ) );
             btn.setToolTipText( action.getToolTipText() );
             btn.addSelectionListener( new SelectionAdapter() {
@@ -280,12 +252,7 @@ public class ScriptEditor
                     fireSelectionChanged( sel.getStart(), sel.getEnd() );
                 }
                 else if (ev.getPropertyName().equals( CodeMirror.PROP_TEXT )) {
-                    isDirty = true;
-                    Polymap.getSessionDisplay().asyncExec( new Runnable() {
-                        public void run() {
-                            firePropertyChange( PROP_DIRTY );
-                        }
-                    });
+                    updateDirtyState( true );
                 }
                 else if (ev.getPropertyName().equals( CodeMirror.PROP_SAVE )) {
                     doSave( null );
@@ -295,19 +262,6 @@ public class ScriptEditor
         
         doLoad( new NullProgressMonitor() );
     }
-
-
-    
-//        log.debug( "fieldChange(): dirty=" + isDirty + ", isValid=" + isValid );
-//        boolean old = actionsEnabled;
-//        actionsEnabled = isValid && isDirty;
-//        if (actionsEnabled != old) {
-//            for (Action action : standardPageActions) {
-//                action.setEnabled( actionsEnabled );
-//            }
-//            editorDirtyStateChanged();
-//        }
-//    }
 
 
     public void gotoMarker( IMarker marker ) {
@@ -328,18 +282,29 @@ public class ScriptEditor
         return isDirty;
     }
 
-
-    public void doSave( IProgressMonitor monitor ) {
-        try {
-            IFileEditorInput input = getEditorInput();
-            InputStream in = new ByteArrayInputStream( editor.getText().getBytes( "UTF-8" ) );
-            input.getFile().setContents( in, 0, monitor );
-            isDirty = false;
+    /**
+     * Update the {@link #isDirty()} state and fires property event if necessary.
+     * 
+     * @param dirty The new dirty state
+     */
+    protected void updateDirtyState( boolean dirty ) {
+        if (isDirty != dirty) {
+            isDirty = dirty;
             Polymap.getSessionDisplay().asyncExec( new Runnable() {
                 public void run() {
                     firePropertyChange( PROP_DIRTY );
                 }
             });
+        }
+    }
+    
+    
+    public void doSave( IProgressMonitor monitor ) {
+        try {
+            IFileEditorInput input = getEditorInput();
+            InputStream in = new ByteArrayInputStream( editor.getText().getBytes( "UTF-8" ) );
+            input.getFile().setContents( in, 0, monitor );
+            updateDirtyState( false );
         }
         catch (Exception e) {
             PolymapWorkbench.handleError( RheiIdePlugin.PLUGIN_ID, this, e.getLocalizedMessage(), e );
@@ -352,9 +317,9 @@ public class ScriptEditor
         try {
             in = getEditorInput().getFile().getContents();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            StreamUtils.copy( in, out );
+            IOUtils.copy( in, out );
             editor.setText( out.toString( "UTF-8" ) );
-            isDirty = false;
+            updateDirtyState( false );
 
             updateMarkers();
         }
@@ -401,41 +366,42 @@ public class ScriptEditor
     public void setSelection( ISelection selection ) {
         this.selection = selection;
     }
+
     
     /**
-     * Finds the Java element and markers at the given position in the text
-     * and fires a {@link SelectionChangedEvent} to our listeners.
+     * Finds the selections at the given text position. The gathered elements
+     * are fired as a {@link SelectionChangedEvent}.
+     * <p/>
+     * Sub classes may override and add their specific selection elements.
      *
+     * @return List of elements of a {@link SelectionChangedEvent}.
+     */
+    protected List gatherSelections( int start, int end )
+    throws Exception {
+        List elms = new ArrayList();
+        // find markers at position
+        for (IMarker marker : markers) {
+            int markerStart = marker.getAttribute( IMarker.CHAR_START, 0 );
+            int markerEnd = marker.getAttribute( IMarker.CHAR_END, 0 );
+            if (start >= markerStart && end <= markerEnd) {
+                elms.add( marker );
+            }
+        }
+        return elms;
+    }
+
+
+    /**
+     * Finds selection elements via {@link #gatherSelections(int, int)} and fires a
+     * {@link SelectionChangedEvent} to the {@link #selectionListeners}.
+     * 
      * @param start Start position of the text selection.
      * @param end End position of the text selection.
      */
     protected void fireSelectionChanged( int start, int end ) {
         try {
-            List elms = new ArrayList();
+            List elms = gatherSelections( start, end );
             
-            // find Java element at position
-            // XXX refactor this into java package
-            ICompilationUnit cu = (ICompilationUnit)JavaCore.create( getEditorInput().getFile() );
-            if (cu != null) {
-                IJavaElement[] javaElms = cu.codeSelect( start, end-start );
-                elms.addAll( Arrays.asList( javaElms ) );
-                if (javaElms.length > 0) {
-                    //                if (selectedJavaElements[0] instanceof IMember) {
-                    //                    ISourceRange name = ((IMember)selectedJavaElements[0]).getNameRange();
-                    //                    if (name != null) {
-                    //                        editor.setSelection( name.getOffset(), name.getOffset() + name.getLength() );
-                    //                    }
-                    //                }
-                }
-            }
-            // find markers at position
-            for (IMarker marker : markers) {
-                int markerStart = marker.getAttribute( IMarker.CHAR_START, 0 );
-                int markerEnd = marker.getAttribute( IMarker.CHAR_END, 0 );
-                if (start >= markerStart && end <= markerEnd) {
-                    elms.add( marker );
-                }
-            }
             // fire event
             if (!elms.isEmpty()) {
                 StructuredSelection sel = new StructuredSelection( elms );
@@ -445,10 +411,19 @@ public class ScriptEditor
                 }
             }
         }
-        catch (CoreException e) {
+        catch (Exception e) {
             // just log, no UI message
             log.warn( e.getLocalizedMessage(), e );
         }
+    }
+
+    
+    public void addPropertyChangeListener( PropertyChangeListener l ) {
+        editor.addPropertyChangeListener( l );
+    }
+    
+    public void removePropertyChangeListener( PropertyChangeListener l ) {
+        editor.removePropertyCHangeListener( l );
     }
 
 }

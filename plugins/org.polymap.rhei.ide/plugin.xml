@@ -32,10 +32,18 @@
       <editor
             class="org.polymap.rhei.ide.editor.ScriptEditor"
             default="false"
-            extensions="java, js, html, classpath"
+            extensions="html, classpath"
             icon="icons/eview16/script_editor.gif"
             id="org.polymap.rhei.ide.ScriptEditor"
             name="Script">
+      </editor>
+      <editor
+            class="org.polymap.rhei.ide.java.JavaEditor"
+            default="false"
+            extensions="java, js"
+            icon="icons/obj16/jcu_obj.gif"
+            id="org.polymap.rhei.ide.JavaEditor"
+            name="Java">
       </editor>
    </extension>
    <extension

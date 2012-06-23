@@ -10,7 +10,7 @@ import org.polymap.rhei.ide.RheiIdePlugin;
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-class RunScriptAction
+public class RunScriptAction
         extends Action {
 
     private final ScriptEditor          editor;
