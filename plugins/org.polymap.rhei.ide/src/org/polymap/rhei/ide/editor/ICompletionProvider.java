@@ -14,7 +14,9 @@
  */
 package org.polymap.rhei.ide.editor;
 
-import java.util.List;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.polymap.core.runtime.UIJob;
 
 /**
  * 
@@ -22,7 +24,46 @@ import java.util.List;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public interface ICompletionProvider {
-    
-    List<ICompletion> findProposals();
 
+    /**
+     * Find completion proposals. The given handler provides context information via
+     * its getters. Results should be passed to the
+     * {@link ProposalHandler#handle(ICompletion)} method.
+     * <p/>
+     * Method is called from within a dedicated {@link UIJob}. Implementations should
+     * use the given {@link ProposalHandler#getMonitor() monitor}. The cancel state
+     * of the monitor signals that no more proposals should be computed (timeout or
+     * count limit reached.
+     * 
+     * @param handler
+     * @throws Exception
+     */
+    void findProposals( ProposalHandler handler ) throws Exception;
+
+    
+    /**
+     * Handler for completion proposals. Also provides context information
+     * for the provider. 
+     */
+    interface ProposalHandler {
+
+        ScriptEditor getEditor();
+        
+        String getText();
+        
+        int getPos();
+        
+        IProgressMonitor getMonitor();
+        
+        /**
+         * Takes that given completion proposal.
+         * <p/>
+         * Callers should check cancel state of the handler's monitor.
+         * 
+         * @param proposal
+         */
+        void handle( ICompletion proposal );
+        
+    }
+    
 }

@@ -14,7 +14,6 @@
  */
 package org.polymap.rhei.ide;
 
-import java.io.Reader;
 import java.net.URL;
 
 import org.osgi.framework.BundleContext;
@@ -22,7 +21,6 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.http.HttpService;
 import org.osgi.util.tracker.ServiceTracker;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.graphics.Image;
@@ -32,20 +30,14 @@ import org.eclipse.jface.resource.ImageRegistry;
 
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IMember;
-import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.ui.JavadocContentAccess;
 import org.polymap.rhei.ide.java.JavaProjectInitializer;
 import org.polymap.rhei.script.RheiScriptPlugin;
 
@@ -141,26 +133,26 @@ public class RheiIdePlugin
             // some debug/tests
             IJavaProject javaProject = JavaCore.create( project ); 
 
-            project.build( IncrementalProjectBuilder.FULL_BUILD, null );
-
-            IFolder srcFolder = project.getFolder( "src" );
-            IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( srcFolder );
-
-            IPackageFragment pkg = srcRoot.getPackageFragment( "forms" );
-            ICompilationUnit cu = pkg.getCompilationUnit( "TestFormPage.java" );
-            log.info( "CompilationUnit: "  + cu );
-            cu.open( null );
-            log.info( "   primaryType: " + cu.findPrimaryType() );
-            log.info( "   markers:" );
-            for (IMarker marker : findJavaProblemMarkers( cu )) {
-                log.info( "        line " + marker.getAttribute( IMarker.LINE_NUMBER )
-                        + ": " + marker.getAttribute( IMarker.MESSAGE ) );
-            }
-
-            // javadoc test
-            IMember member = cu.findPrimaryType().getMethod( "finalize", new String[0] );
-            Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
-            log.info( "    JavaDoc: " + (reader != null ? IOUtils.toString( reader ) : "nothing found") );
+//            project.build( IncrementalProjectBuilder.FULL_BUILD, null );
+//
+//            IFolder srcFolder = project.getFolder( "src" );
+//            IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( srcFolder );
+//
+//            IPackageFragment pkg = srcRoot.getPackageFragment( "forms" );
+//            ICompilationUnit cu = pkg.getCompilationUnit( "TestFormPage.java" );
+//            log.info( "CompilationUnit: "  + cu );
+//            cu.open( null );
+//            log.info( "   primaryType: " + cu.findPrimaryType() );
+//            log.info( "   markers:" );
+//            for (IMarker marker : findJavaProblemMarkers( cu )) {
+//                log.info( "        line " + marker.getAttribute( IMarker.LINE_NUMBER )
+//                        + ": " + marker.getAttribute( IMarker.MESSAGE ) );
+//            }
+//
+//            // javadoc test
+//            IMember member = cu.findPrimaryType().getMethod( "finalize", new String[0] );
+//            Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
+//            log.info( "    JavaDoc: " + (reader != null ? IOUtils.toString( reader ) : "nothing found") );
         }
         catch (Exception e) {
             throw new RuntimeException( e );

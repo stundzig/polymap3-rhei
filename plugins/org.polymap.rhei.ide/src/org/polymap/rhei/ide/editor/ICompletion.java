@@ -15,12 +15,23 @@
 package org.polymap.rhei.ide.editor;
 
 /**
- * 
+ * Represents a completion proposal.
+ * <p/>
+ * This interface keeps 
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public interface ICompletion {
+public interface ICompletion
+        extends org.eclipse.rwt.widgets.codemirror.ICompletion {
 
-    public void process();
+    public int getRelevance();
+    
+    // org.eclipse.rwt.widgets.codemirror.ICompletion *****
+    
+    public String getCompletion();
+    
+    public int getReplaceStart();
+    
+    public int getReplaceEnd();
     
 }

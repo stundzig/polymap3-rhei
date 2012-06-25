@@ -17,7 +17,10 @@ package org.polymap.rhei.ide.editor;
 import static org.polymap.rhei.ide.Messages.i18n;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.ByteArrayInputStream;
@@ -31,6 +34,7 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
@@ -91,21 +95,29 @@ public class ScriptEditor
 
     static Log log = LogFactory.getLog( ScriptEditor.class );
 
-    public static final String          ID = "org.polymap.rhei.ide.ScriptEditor";
+    public static final String      ID = "org.polymap.rhei.ide.ScriptEditor";
     
-    private boolean                     isDirty;
+    public final static Image       ERROR = RheiIdePlugin.getDefault().imageForName( "icons/elcl16/error_tsk.gif" );
+    public final static Image       WARN = RheiIdePlugin.getDefault().imageForName( "icons/elcl16/warn_tsk.gif" );
+    public final static Image       INFO = RheiIdePlugin.getDefault().imageForName( "icons/elcl16/info_tsk.gif" );
     
-    protected CodeMirror                editor;
+    private boolean                 isDirty;
     
-    protected IMarker[]                 markers;
+    protected CodeMirror            editor;
     
-    protected List<Action>              actions = new ArrayList();
+    protected IMarker[]             markers;
+    
+    protected List<Action>          actions = new ArrayList();
 
     /** Listeners of this {@link ISelectionProvider}. */
     protected ListenerList<ISelectionChangedListener> selectionListeners = new ListenerList();
 
     /** The current selection of this {@link ISelectionProvider}. */
-    private ISelection                  selection;
+    protected ISelection            selection;
+
+    protected Set<ICompletionProvider> completionProviders = new HashSet();
+    
+    private CompletionJob           completionJob;
     
     
     public IFileEditorInput getEditorInput() {
@@ -131,7 +143,7 @@ public class ScriptEditor
         // contribute marker selections to status line
         addSelectionChangedListener( new MarkerSelectionStatusLineAdapter(
                 getEditorSite().getActionBars().getStatusLineManager() ) );
-        
+
         // submit action
         final Action submitAction = new Action( i18n( "ScriptEditor_submit" ) ) {
             public void run() {
@@ -183,7 +195,7 @@ public class ScriptEditor
             IResourceDelta rootDelta = event.getDelta();
             // find my changes
             IResourceDelta fileDelta = rootDelta.findMember( getEditorInput().getFile().getFullPath() );
-            if (fileDelta != null) {
+            if (fileDelta != null && editor != null) {
                 updateMarkers();                        
             }
         }
@@ -195,10 +207,20 @@ public class ScriptEditor
             editor.lineMarkers().clear();
             IMarker[] newMarkers = getEditorInput().getFile().findMarkers( null, true, IResource.DEPTH_ZERO );
             for (IMarker marker : newMarkers) {
+                Image image = null;
+                switch (marker.getAttribute( IMarker.SEVERITY, IMarker.SEVERITY_ERROR )) {
+                    case IMarker.SEVERITY_ERROR: 
+                        image = ERROR; break;
+                    case IMarker.SEVERITY_WARNING: 
+                        image = WARN; break;
+                    case IMarker.SEVERITY_INFO: 
+                        image = INFO; break;
+                }
                 editor.lineMarkers().put( new LineMarker( String.valueOf( marker.getId() ) )
                         .setLine( marker.getAttribute( IMarker.LINE_NUMBER, 0 ) )
                         .setCharPos( marker.getAttribute( IMarker.CHAR_START, 0 ), marker.getAttribute( IMarker.CHAR_END, 0 ) )
-                        .setText( marker.getAttribute( IMarker.MESSAGE, "" ) ) );
+                        .setText( marker.getAttribute( IMarker.MESSAGE, "" ) )
+                        .setIcon( image ));
             }
             markers = newMarkers;
         }
@@ -259,7 +281,12 @@ public class ScriptEditor
                 }
             }
         });
-        
+
+        // init completion system
+        initCompletionProviders();
+        completionJob = new CompletionJob( this );
+        addPropertyChangeListener( completionJob );
+
         doLoad( new NullProgressMonitor() );
     }
 
@@ -400,6 +427,7 @@ public class ScriptEditor
      */
     protected void fireSelectionChanged( int start, int end ) {
         try {
+            // gather selections
             List elms = gatherSelections( start, end );
             
             // fire event
@@ -418,6 +446,12 @@ public class ScriptEditor
     }
 
     
+    /**
+     * Add listener to the underlying {@link CodeMirror} editor. The source
+     * of the events is the {@link CodeMirror} instance.
+     * 
+     * @param l Listener to add.
+     */
     public void addPropertyChangeListener( PropertyChangeListener l ) {
         editor.addPropertyChangeListener( l );
     }
@@ -426,4 +460,17 @@ public class ScriptEditor
         editor.removePropertyCHangeListener( l );
     }
 
+    
+    // completions ****************************************
+    
+    /**
+     * Find extensions.
+     */
+    protected void initCompletionProviders() {
+    }
+    
+    public void addCompletionProvider( ICompletionProvider provider ) {
+        completionProviders.add( provider );    
+    }
+    
 }

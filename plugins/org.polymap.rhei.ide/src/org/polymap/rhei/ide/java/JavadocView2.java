@@ -78,7 +78,7 @@ public class JavadocView2
         
         selectionListener = new ISelectionListener() {
             public void selectionChanged( IWorkbenchPart part, ISelection sel ) {
-                log.info( "selection: " + sel + " on: " + part );
+                log.debug( "selection: " + sel + " on: " + part );
                 if (sel instanceof IStructuredSelection) {
                     for (Object elm : ((IStructuredSelection)sel).toList()) {
                         UpdateContentJob job = new UpdateContentJob( elm );
@@ -162,7 +162,7 @@ public class JavadocView2
                 Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
                 String html = reader != null ? IOUtils.toString( reader ) : "";
 
-                final String pageHtml = createPageHtml( html, member );
+                final String pageHtml = createPageHtml( html );
 
                 Polymap.getSessionDisplay().asyncExec( new Runnable() {
                     public void run() {
@@ -175,7 +175,7 @@ public class JavadocView2
             }
         }
         
-        protected String createPageHtml( String docHtml, IMember member ) {
+        protected String createPageHtml( String docHtml ) {
             String icon = "unknown_obj.gif";
             if (member instanceof IType) {
                 icon = "class_obj.gif";

@@ -18,9 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import java.io.IOException;
-import java.net.URL;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,14 +28,11 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IClasspathEntry;
-import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 
 import org.polymap.rhei.ide.RheiIdePlugin;
-import org.polymap.rhei.script.RheiScriptPlugin;
 
 /**
  * Provides static helpers to create Scripts project and its JavaNature.
@@ -74,31 +68,25 @@ public class JavaProjectInitializer {
             IJavaProject javaProject = JavaCore.create( project ); 
 
             // src folder
-            IFolder sourceFolder = project.getFolder( "src" );
-            sourceFolder.create( false, true, null );
-            IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( sourceFolder );
+            IFolder srcFolder = project.getFolder( "src" );
+            IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( srcFolder );
 
             // output folder
             IFolder binFolder = project.getFolder( RheiIdePlugin.BUILD_FOLDER_NAME );
             binFolder.create( false, true, null );
             javaProject.setOutputLocation( binFolder.getFullPath(), null );
 
-            // classpath: JRE cont, bundles cont, src
+            // classpath: JRE container + BUNDLES container + src
             List<IClasspathEntry> entries = new ArrayList();
             entries.add( JavaCore.newContainerEntry( new Path( 
                     JREClasspathContainerInitializer.ID ) ) );
             entries.add( JavaCore.newContainerEntry( new Path( 
                     BundlesClasspathContainerInitializer.ID ) ) );
             entries.add( JavaCore.newSourceEntry( srcRoot.getPath() ) );
-            // set classpath
             javaProject.setRawClasspath(
                     entries.toArray( new IClasspathEntry[entries.size()] ), null );
 
-            // copy test class
-            URL res = RheiScriptPlugin.getDefault().getBundle().getResource( "resources/TestFormPage.java" );
-            String code = IOUtils.toString( res.openStream(), "UTF-8" );
-            IPackageFragment pkg = srcRoot.createPackageFragment( "forms", false, null );
-            ICompilationUnit obj = pkg.createCompilationUnit( "forms/TestFormPage.java", code, false, null );
+            srcRoot.createPackageFragment( "procs", true, null );
         }
     }
     

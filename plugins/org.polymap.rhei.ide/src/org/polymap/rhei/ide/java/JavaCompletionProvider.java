@@ -15,21 +15,17 @@
 package org.polymap.rhei.ide.java;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.rwt.widgets.codemirror.CodeMirror;
 
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.CompletionProposal;
 import org.eclipse.jdt.core.CompletionRequestor;
 import org.eclipse.jdt.core.ICompilationUnit;
-import org.polymap.core.runtime.Timer;
-import org.polymap.core.runtime.UIJob;
 
-import org.polymap.rhei.ide.editor.ScriptEditor;
+import org.polymap.rhei.ide.editor.ICompletion;
+import org.polymap.rhei.ide.editor.ICompletionProvider;
 
 /**
  * 
@@ -37,7 +33,7 @@ import org.polymap.rhei.ide.editor.ScriptEditor;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class JavaCompletionProvider
-        implements PropertyChangeListener {
+        implements ICompletionProvider {
 
     static Log log = LogFactory.getLog( JavaCompletionProvider.class );
 
@@ -48,42 +44,35 @@ public class JavaCompletionProvider
             ICompilationUnit cu = editor.getWorkingCopy();
             if (cu != null) {
                 Integer offset = (Integer)ev.getNewValue();
-                new CompletionsFinder( editor, cu, offset ).schedule();
+                //new CompletionsFinder( editor, cu, offset ).schedule();
             }
         }
     }
 
     
-    /**
-     * 
-     */
-    class CompletionsFinder
-            extends UIJob {
-
-        private ScriptEditor        editor;
-        
-        private ICompilationUnit    cu;
-        
-        private int                 offset;
-
-        public CompletionsFinder( ScriptEditor editor, ICompilationUnit cu, int offset ) {
-            super( "Completions..." );
-            this.editor = editor;
-            this.cu = cu;
-            this.offset = offset;
-            setPriority( SHORT );
-        }
-
-        protected void runWithException( IProgressMonitor monitor )
-                throws Exception {
-            Timer timer = new Timer();
-            log.info( "Completion of: " + cu.getElementAt( offset ) );
-            cu.codeComplete( offset, new CompletionRequestor() {
-                public void accept( CompletionProposal proposal ) {
-                    //log.info( "PROPOSAL: " + new String( proposal.getCompletion() ) );
+    public void findProposals( final ProposalHandler handler ) 
+    throws Exception {
+        ICompilationUnit cu = ((JavaEditor)handler.getEditor()).getWorkingCopy();
+        if (cu != null) {
+            
+            cu.codeComplete( handler.getPos(), new CompletionRequestor() {
+                public void accept( final CompletionProposal proposal ) {
+                    handler.handle( new ICompletion() {
+                        public String getCompletion() {
+                            return new String( proposal.getCompletion() );
+                        }
+                        public int getReplaceStart() {
+                            return proposal.getReplaceStart();
+                        }
+                        public int getReplaceEnd() {
+                            return proposal.getReplaceEnd();
+                        }
+                        public int getRelevance() {
+                            return proposal.getRelevance();
+                        }
+                    });
                 }
-            }, monitor );
-            log.info( getName() + " ...ready. (" + timer.elapsedTime() + "ms)" );
+            }, handler.getMonitor() );
         }
     }
 

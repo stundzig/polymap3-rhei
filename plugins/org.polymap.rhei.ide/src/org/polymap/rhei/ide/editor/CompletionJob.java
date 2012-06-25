@@ -14,16 +14,25 @@
  */
 package org.polymap.rhei.ide.editor;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.eclipse.rwt.widgets.codemirror.CodeMirror;
+
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.core.CompletionProposal;
-import org.eclipse.jdt.core.CompletionRequestor;
-import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.core.runtime.jobs.Job;
 
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.UIJob;
+
+import org.polymap.rhei.ide.editor.ICompletionProvider.ProposalHandler;
 
 /**
  * 
@@ -31,35 +40,99 @@ import org.polymap.core.runtime.UIJob;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 class CompletionJob
-        extends UIJob {
+        extends UIJob
+        implements ProposalHandler, PropertyChangeListener {
 
     private static Log log = LogFactory.getLog( CompletionJob.class );
 
+    private Timer               timer;
+    
     private ScriptEditor        editor;
     
-    private ICompilationUnit    cu;
+    private IProgressMonitor    monitor;
     
-    private int                 offset;
-
+    private int                 maxProposals = 100;
     
-    public CompletionJob( ScriptEditor editor, ICompilationUnit cu, int offset ) {
+    private List<ICompletion>   proposals = new ArrayList( maxProposals );
+    
+    
+    public CompletionJob( ScriptEditor editor ) {
         super( "Completions..." );
         this.editor = editor;
-        this.cu = cu;
-        this.offset = offset;
         setPriority( SHORT );
     }
 
     
-    protected void runWithException( IProgressMonitor monitor )
-            throws Exception {
-        Timer timer = new Timer();
-        cu.codeComplete( offset, new CompletionRequestor() {
-            public void accept( CompletionProposal proposal ) {
-                log.info( "PROPOSAL: " + new String( proposal.getCompletion() ) );
+    public void propertyChange( PropertyChangeEvent ev ) {
+        if (ev.getPropertyName().equals( CodeMirror.PROP_CURSOR_POS )
+                && getState() == Job.NONE) {
+            schedule();
+        }
+    }
+
+
+    protected void runWithException( IProgressMonitor _monitor )
+    throws Exception {
+        monitor = _monitor;
+        timer = new Timer();
+        String text = getText();
+        int pos = getPos();
+        
+        if (Character.isWhitespace( text.charAt( pos ) )
+                && pos >= 0
+                && !Character.isWhitespace( text.charAt( pos-1 ) )) {
+            
+            // call all providers
+            List<ICompletionProvider> providers = new ArrayList( editor.completionProviders );
+            for (ICompletionProvider provider : providers) {
+                try {
+                    provider.findProposals( this );
+                }
+                catch (Exception e) {
+                    log.warn( "Provider failed: " + provider, e );
+                }
             }
-        }, monitor );
-        log.info( getName() + " ...ready. (" + timer.elapsedTime() + "ms)" );
+            
+            // open completions in editor
+            if (!proposals.isEmpty()) {
+                List<ICompletion> sorted = new ArrayList( proposals );
+                Collections.sort( sorted, new Comparator<ICompletion> () {
+                    public int compare( ICompletion o1, ICompletion o2 ) {
+                        return -(o1.getRelevance() - o2.getRelevance());
+                    }
+                });
+                editor.editor.openCompletions( new ArrayList<org.eclipse.rwt.widgets.codemirror.ICompletion>( sorted ) );
+                proposals.clear();
+            }
+        }
+        log.info( getName() + " ready. (" + proposals.size() + " in " + timer.elapsedTime() + "ms)" );
+    }
+
+
+    // ProposalHandler ************************************
+    
+    public ScriptEditor getEditor() {
+        return editor;
+    }
+
+    public IProgressMonitor getMonitor() {
+        return monitor;
+    }
+
+    public int getPos() {
+        return editor.editor.getCursorPos();
+    }
+
+    public String getText() {
+        return editor.editor.getText();
+    }
+
+    public void handle( ICompletion proposal ) {
+        //log.info( "PROPOSAL: " + new String( proposal.getCompletion() ) );
+        proposals.add( proposal );
+        if (proposals.size() > maxProposals) {
+            monitor.setCanceled( true );
+        }
     }
     
 }

@@ -1,3 +1,5 @@
+package forms;
+
 import org.polymap.rhei.form.*;
 import org.geotools.data.*;
 import org.opengis.feature.*;
@@ -7,11 +9,11 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Label;
 
 //Ausgabe aller Variabler für Testzwecke
-for (int i=0; i<this.variables.length; i++) {
-    System.out.println( "    variable: " + this.variables[i] );
-}
-System.out.println( "feature: " + _feature );
-System.out.println( "fs: " + _fs );
+//for (int i=0; i<this.variables.length; i++) {
+//    System.out.println( "    variable: " + this.variables[i] );
+//}
+//System.out.println( "feature: " + _feature );
+//System.out.println( "fs: " + _fs );
 
 public class TestFormPage
         extends DefaultFormEditorPage {
@@ -35,4 +37,4 @@ public class TestFormPage
     }
 }
 
-IFormEditorPage result = new TestFormPage();
+//IFormEditorPage result = new TestFormPage();

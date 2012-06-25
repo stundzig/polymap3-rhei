@@ -28,12 +28,11 @@ import org.eclipse.jface.resource.ImageRegistry;
 
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-
 import org.polymap.core.workbench.PolymapWorkbench;
 
 /**
@@ -77,8 +76,16 @@ public class RheiScriptPlugin
 
                 IFolder formsFolder = project.getFolder( "src/forms" );
                 formsFolder.create( false, true, null );
+
+                // copy test class
+                URL res = RheiScriptPlugin.getDefault().getBundle().getResource( "resources/TestFormPage.java" );
+                IFile f = formsFolder.getFile( "TestFormPage.java" );
+                f.create( res.openStream(), 0, null );
+
+                IFolder procsFolder = project.getFolder( "src/procs" );
+                procsFolder.create( false, true, null );
             }
-            catch (CoreException e) {
+            catch (Exception e) {
                 PolymapWorkbench.handleError( RheiScriptPlugin.PLUGIN_ID, null, e.getLocalizedMessage(), e );
             }
         }

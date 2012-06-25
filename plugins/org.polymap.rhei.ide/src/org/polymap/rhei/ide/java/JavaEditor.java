@@ -21,6 +21,9 @@ import java.beans.PropertyChangeListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.widgets.Composite;
+
+import org.eclipse.rwt.widgets.codemirror.CodeMirror;
+
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.PartInitException;
@@ -65,6 +68,8 @@ public class JavaEditor
     throws PartInitException {
         super.init( _site, _input );
         actions.add( new RunScriptAction( this ) );
+
+        addCompletionProvider( new JavaCompletionProvider() );
     }
 
     
@@ -90,14 +95,14 @@ public class JavaEditor
         
         editor.addPropertyChangeListener( new PropertyChangeListener() {
             public void propertyChange( PropertyChangeEvent ev ) {
-                applyTextEdit();
+                if (ev.getPropertyName().equals( CodeMirror.PROP_TEXT )) {
+                    applyTextEdit();
+                }
                 
                 PropertyChangeEvent ev2 = new PropertyChangeEvent( 
                         JavaEditor.this,
                         ev.getPropertyName(),
                         ev.getOldValue(), ev.getNewValue() );
-                // XXX do this via extension
-                new JavaCompletionProvider().propertyChange( ev2 );
             }
         });
     }
@@ -135,6 +140,7 @@ public class JavaEditor
     }
 
 
+    @SuppressWarnings("deprecation")
     public void doLoad( IProgressMonitor monitor ) {
         try {
             problemHandler = new ProblemHandler();

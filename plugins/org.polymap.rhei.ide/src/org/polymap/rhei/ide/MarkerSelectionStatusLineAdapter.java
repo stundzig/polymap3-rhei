@@ -79,7 +79,7 @@ public class MarkerSelectionStatusLineAdapter
         final Image displayImage = image;
         Polymap.getSessionDisplay().asyncExec( new Runnable() {
             public void run() {
-                log.info( "Status msg: " + displayMsg );
+                log.debug( "Status msg: " + displayMsg );
                 manager.setMessage( displayImage, displayMsg );
             }
         });

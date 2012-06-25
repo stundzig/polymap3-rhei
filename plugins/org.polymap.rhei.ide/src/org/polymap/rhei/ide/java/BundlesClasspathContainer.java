@@ -22,6 +22,8 @@ import java.net.URI;
 import java.net.URL;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleListener;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -65,6 +67,13 @@ public class BundlesClasspathContainer
         else {
             homeDir = new File( home );
         }
+        
+        // bundle state changed -> force classpath update
+        RheiIdePlugin.getDefault().getBundle().getBundleContext().addBundleListener( new BundleListener() {
+            public void bundleChanged( BundleEvent ev ) {
+                entries = null;
+            }
+        });
     }
     
     public String getDescription() {
@@ -119,11 +128,15 @@ public class BundlesClasspathContainer
 
                         public void handle( String kind, String path, String srcPath, String javadoc ) {
                             log.debug( "   entry: " + path );
-                            if (kind.equals( "output")) {
-                                result.add( JavaCore.newLibraryEntry( 
-                                        filePath.append( path ), filePath.append( srcPath ), null ) );
+                            if (kind.equals( "output" )) {
+                                if (filePath.append( path ).toFile().exists()
+                                        // XXX fb: hack; I just don't see why this bundle's output is not found :(
+                                        && !filePath.toString().contains( "org.eclipse.text" )) {
+                                    result.add( JavaCore.newLibraryEntry( 
+                                            filePath.append( path ), filePath.append( srcPath ), null ) );
+                                }
                             }
-                            else if (kind.equals( "lib")) {
+                            else if (kind.equals( "lib" )) {
                                 result.add( JavaCore.newLibraryEntry( filePath.append( path ), null, null ) );                                
                             }
                         }
@@ -143,7 +156,7 @@ public class BundlesClasspathContainer
                 }
             }
         }
-        log.info( "Classpath computed. (" + timer.elapsedTime() + ")" );
+        log.info( "Classpath computed: " + result.size() + " entries. (" + timer.elapsedTime() + "ms)" );
         return result.toArray( new IClasspathEntry[ result.size() ] );
     }
 

@@ -28,8 +28,6 @@ import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 
-import org.eclipse.ui.internal.ide.ContentTypeDecorator;
-
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
@@ -43,10 +41,6 @@ import org.polymap.rhei.ide.RheiIdePlugin;
 
 /**
  * Decorates {@link IResource} elements with icon for max marker severity. 
- * <p/>
- * XXX Seems to produce issues with {@link ContentTypeDecorator}. Our
- * {@link #fireLabelProviderChanged(LabelProviderChangedEvent)} seems to
- * hit the other decorator in wrong state/context.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
@@ -60,7 +54,8 @@ public class MarkerResourceDecorator
             RheiIdePlugin.PLUGIN_ID, "icons/ovr16/error_co.gif" );
 
     private static final ImageDescriptor    warn = RheiIdePlugin.imageDescriptorFromPlugin( 
-            RheiIdePlugin.PLUGIN_ID, "icons/ovr16/warn_co.gif" );
+            RheiIdePlugin.PLUGIN_ID, "icons/ovr16/warning_co.gif" );
+
 
     private Set<IResource>  decorated = new HashSet();
     
