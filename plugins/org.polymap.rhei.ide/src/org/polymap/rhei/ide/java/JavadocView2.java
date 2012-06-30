@@ -63,6 +63,8 @@ public class JavadocView2
 
     private static Log log = LogFactory.getLog( JavadocView2.class );
 
+    public static final String  ID = "org.polymap.rhei.ide.JavadocView";
+    
     private Browser             browser;
     
     private ISelectionListener  selectionListener;

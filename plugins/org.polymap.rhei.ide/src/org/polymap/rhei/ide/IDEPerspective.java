@@ -18,7 +18,11 @@ import org.eclipse.ui.IFolderLayout;
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IPerspectiveFactory;
 import org.eclipse.ui.IPlaceholderFolderLayout;
+import org.eclipse.ui.cheatsheets.OpenCheatSheetAction;
 
+import org.polymap.core.runtime.Polymap;
+
+import org.polymap.rhei.ide.java.JavadocView2;
 import org.polymap.rhei.ide.navigator.ProjectNavigator;
 
 /**
@@ -26,7 +30,7 @@ import org.polymap.rhei.ide.navigator.ProjectNavigator;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class IdePerspectiveFactory
+public class IDEPerspective
         implements IPerspectiveFactory {
 
     public void createInitialLayout( IPageLayout layout ) {
@@ -34,15 +38,34 @@ public class IdePerspectiveFactory
         layout.setEditorAreaVisible( true );
 
         IFolderLayout topLeft = layout.createFolder(
-                "topLeft", IPageLayout.LEFT, 0.23f, editorArea );
-        IFolderLayout bottomLeft = layout.createFolder(
-                "bottomLeft", IPageLayout.BOTTOM, 0.65f, "topLeft" );
+                "topLeft", IPageLayout.LEFT, 0.17f, editorArea );
+//        IFolderLayout bottomLeft = layout.createFolder(
+//                "bottomLeft", IPageLayout.BOTTOM, 0.50f, "topLeft" );
         IFolderLayout topRight = layout.createFolder(
-                "topRight", IPageLayout.RIGHT, 0.72f, editorArea );
+                "topRight", IPageLayout.RIGHT, 0.70f, editorArea );
+        IFolderLayout bottomRight = layout.createFolder(
+                "bottomRight", IPageLayout.BOTTOM, 0.70f, "topRight" );
         IPlaceholderFolderLayout bottom = layout.createPlaceholderFolder(
                 "bottom", IPageLayout.BOTTOM, 0.70f, editorArea );
 
         topLeft.addView( ProjectNavigator.ID );
+        bottomRight.addView( "org.eclipse.ui.views.AllMarkersView" );
+        topRight.addView( JavadocView2.ID );
+        
+        topRight.addPlaceholder( "org.eclipse.ui.cheatsheets.views.CheatSheetView:*" );
+        topRight.addPlaceholder( "org.eclipse.ui.*" );
+        
+        Polymap.getSessionDisplay().asyncExec( new Runnable() {
+            public void run() {
+                new OpenCheatSheetAction( "org.polymap.rhei.ide.cheatsheet.welcome" ).run();
+            }
+        });
+//        topRight.addView( "org.eclipse.ui.cheatsheets.views.CheatSheetView:org.polymap.rhei.ide.cheatsheet1" );
+        
+        layout.addShowViewShortcut( "org.eclipse.ui.views.AllMarkersView" );
+        layout.addShowViewShortcut( JavadocView2.ID );
+        layout.addShowViewShortcut( "org.eclipse.ui.cheatsheets.views.CheatSheetView" );
+
 
 //        bottomLeft.addView( LayerNavigator.ID );
 //        bottomLeft.addPlaceholder( "org.polymap.rhei.FilterView:*" );

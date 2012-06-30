@@ -21,6 +21,14 @@ import org.polymap.rhei.form.DefaultFormEditorPage;
 
 /**
  * Provides the base class for BeanShell scripted forms.
+ * <p/>
+ * There are the following variables available:
+ * <dl>
+ * <dt>feature</dt><dd>The {@link Feature} of this form.</dd>
+ * <dt>fs</dt><dd>The {@link FeatureStore} of the feature.</dd>
+ * <dt>title</dt><dd>The {@link String} title of this form page.</dd>
+ * <dt>id</dt><dd>The unique {@link String} id of this form page.</dd>
+ * </dl>
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */

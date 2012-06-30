@@ -3,27 +3,34 @@
 <plugin>
    <extension
          point="org.eclipse.ui.views">
+      <category
+            id="org.polymap.rhei.ide.viewCategory"
+            name="%perspective_ide">
+      </category>
       <view
             allowMultiple="false"
+            category="org.polymap.rhei.ide.viewCategory"
             class="org.polymap.rhei.ide.editor.ConsoleView"
             icon="icons/eview16/console_view.gif"
             id="org.polymap.rhei.ide.ConsoleView"
-            name="Console"
+            name="%view_console"
             restorable="false">
       </view>
       <view
+            category="org.polymap.rhei.ide.viewCategory"
             class="org.polymap.rhei.ide.navigator.ProjectNavigator"
             icon="icons/eview16/script_editor.gif"
             id="org.polymap.rhei.ProjectNavigator"
-            name="Scripts"
+            name="%view_scripts"
             restorable="true">
       </view>
       <view
             allowMultiple="false"
+            category="org.polymap.rhei.ide.viewCategory"
             class="org.polymap.rhei.ide.java.JavadocView2"
             icon="icons/eview16/javadoc.gif"
-            id="org.polymap.rhei.ide.JavaDocView"
-            name="JavaDoc"
+            id="org.polymap.rhei.ide.JavadocView"
+            name="%view_javadoc"
             restorable="true">
       </view>
    </extension>
@@ -49,10 +56,10 @@
    <extension
          point="org.eclipse.ui.perspectives">
       <perspective
-            class="org.polymap.rhei.ide.IdePerspectiveFactory"
+            class="org.polymap.rhei.ide.IDEPerspective"
             icon="icons/eview16/script_editor.gif"
             id="org.polymap.rhei.ScriptingPerspective"
-            name="Rhei Scripting">
+            name="%perspective_ide">
       </perspective>
    </extension>
    <extension
@@ -111,6 +118,57 @@
             </objectClass>
          </enablement>
       </decorator>
+   </extension>
+   <extension
+         point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <category
+            id="org.polymap.rhei.ide.cheatsheet.category"
+            name="%perspective_ide">
+      </category>
+      <cheatsheet
+            category="org.polymap.rhei.ide.cheatsheet.category"
+            composite="false"
+            contentFile="%cheatsheet_welcomeContent"
+            id="org.polymap.rhei.ide.cheatsheet.welcome"
+            name="%cheatsheet_welcome">
+      </cheatsheet>
+      <cheatsheet
+            category="org.polymap.rhei.ide.cheatsheet.category"
+            class="org.polymap.rhei.ide.cheatsheets.NewFormCheatSheet"
+            composite="false"
+            id="org.polymap.rhei.ide.cheatsheet.newform"
+            listener="org.polymap.rhei.ide.cheatsheets.NewFormCheatSheet"
+            name="%cheatsheet_newform">
+         <description>
+            %cheatsheet_newformDescription
+         </description>
+      </cheatsheet>
+   </extension>
+   <extension
+         point="org.eclipse.ui.cheatsheets.cheatSheetItemExtension">
+      <itemExtension
+            class="org.polymap.rhei.ide.cheatsheets.TestCheatItemExtension"
+            itemAttribute="test1">
+      </itemExtension>
+   </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <category
+            id="org.polymap.rhei.ide.commandCategory"
+            name="Rhei-IDE">
+      </category>
+      <command
+            categoryId="org.polymap.rhei.ide.commandCategory"
+            defaultHandler="org.polymap.rhei.ide.editor.InsertTextCommand"
+            description="Insert text into current editor"
+            id="org.polymap.rhei.ide.editor.insertText"
+            name="Insert text">
+         <commandParameter
+               id="org.polymap.rhei.ide.editor.textCommandParam"
+               name="Text"
+               optional="true">
+         </commandParameter>
+      </command>
    </extension>
 
 </plugin>

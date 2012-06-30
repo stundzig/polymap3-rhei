@@ -16,6 +16,8 @@ package org.polymap.rhei.script.form;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import java.io.OutputStreamWriter;
 
@@ -55,6 +57,8 @@ public class ScriptFormPageProvider
 
     private static final ScriptEngineManager    manager = new ScriptEngineManager();
     
+    public static final Pattern                 javaClassPattern = Pattern.compile( "class ([a-zA-Z_]+)" );
+    
 
     public ScriptFormPageProvider() {
         for (ScriptEngineFactory f : manager.getEngineFactories()) {
@@ -76,6 +80,8 @@ public class ScriptFormPageProvider
                         try {
                             IFile file = (IFile)resource;
                             String code = IOUtils.toString( file.getContents(), file.getCharset() );
+                            
+                            code = tweakCode( code, file.getFileExtension() );
 
                             ScriptEngine engine = manager.getEngineByExtension( file.getFileExtension() );
                             if (engine != null) {
@@ -100,11 +106,6 @@ public class ScriptFormPageProvider
                                 finally {
                                     ScriptParams.dispose();
                                 }
-
-//                            IFormEditorPage page = (IFormEditorPage)engine.getContext().getAttribute( "result" );
-//                            if (page != null) {
-//                                result.add( page );
-//                            }
                             }
                             else {
                                 log.warn( "No ScriptEngine for extension: " + file.getFileExtension() );
@@ -120,6 +121,23 @@ public class ScriptFormPageProvider
         }
         catch (CoreException e) {
             throw new RuntimeException( e );
+        }
+        return result;
+    }
+
+
+    /**
+     * 
+     */
+    protected String tweakCode( String code, String codeType ) {
+        String result = code;
+        // java: add result bottom line
+        if (codeType.equals( "java" )) {
+            Matcher matcher = javaClassPattern.matcher( code );
+            if (matcher.find()) {
+                String classname = matcher.group( 1 );
+                result = code + "\nObject result = new " + classname + "();";
+            }
         }
         return result;
     }

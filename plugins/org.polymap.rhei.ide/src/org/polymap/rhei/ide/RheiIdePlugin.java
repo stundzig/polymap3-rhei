@@ -133,8 +133,11 @@ public class RheiIdePlugin
             // some debug/tests
             IJavaProject javaProject = JavaCore.create( project ); 
 
+//            // force reindexing hierachy
+            project.refreshLocal( 10, null );
 //            project.build( IncrementalProjectBuilder.FULL_BUILD, null );
-//
+
+            
 //            IFolder srcFolder = project.getFolder( "src" );
 //            IPackageFragmentRoot srcRoot = javaProject.getPackageFragmentRoot( srcFolder );
 //
