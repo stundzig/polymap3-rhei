@@ -32,7 +32,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.jdt.internal.core.ClasspathEntry;
 
-
 /**
  * 
  *
