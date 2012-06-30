@@ -121,6 +121,11 @@ public class JsonForm
         }
     }
 
+    
+    public byte getPriority() {
+        return 0;
+    }
+
 
     public void createFormContent( IFormEditorPageSite _site ) {
         log.debug( "createFormContent(): json= " + json );

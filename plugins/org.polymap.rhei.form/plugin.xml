@@ -149,6 +149,7 @@
       <pageProvider
             class="org.polymap.rhei.internal.forms.StandardPageProvider"
             id="org.polymap.rhei.form.StandardPageProvider"
+            isStandard="false"
             name="StandardPageProvider2">
       </pageProvider>
    </extension>

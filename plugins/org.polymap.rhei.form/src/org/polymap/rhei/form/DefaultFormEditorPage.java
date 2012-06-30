@@ -16,16 +16,47 @@ package org.polymap.rhei.form;
 
 import org.geotools.data.FeatureStore;
 import org.opengis.feature.Feature;
+import org.opengis.feature.Property;
+
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.layout.FormLayout;
+import org.eclipse.swt.layout.RowData;
+import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Layout;
 
 import org.eclipse.jface.action.Action;
 
+import org.eclipse.ui.forms.widgets.Section;
+
+import org.polymap.core.project.ui.util.SimpleFormData;
+import org.polymap.core.runtime.Polymap;
+
+import org.polymap.rhei.field.IFormField;
+import org.polymap.rhei.field.IFormFieldValidator;
+import org.polymap.rhei.field.NumberValidator;
+import org.polymap.rhei.field.TextFormField;
+
 /**
+ * Provides some defaults to implement a form editor page.
+ * <p/>
+ * The <b>layout</b> is based on {@link FormLayout}. In order to get this working the
+ * {@link #createFormContent(IFormEditorPageSite)} must be called from sub-classes.
+ * <p/>
+ * The default priority is 1, showing "above" any unspecific standard page. The priority
+ * might be adjusted by overriding {@link #getPriority()}.  
  * 
- *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public abstract class DefaultFormEditorPage
         implements IFormEditorPage {
+
+    /** The default space between the sections of the page. */
+    public static final int         SECTION_SPACING = 6;
 
     /**
      * The ID of this form.
@@ -46,13 +77,23 @@ public abstract class DefaultFormEditorPage
      * The {@link FeatureStore} of the {@link #feature} of this form.
      */
     protected FeatureStore          fs;
-
+    
+    protected IFormEditorPageSite   pageSite;
+    
     
     public DefaultFormEditorPage( String id, String title, Feature feature, FeatureStore fs ) {
         this.id = id;
         this.title = title;
         this.feature = feature;
         this.fs = fs;
+    }
+
+    /**
+     * Initializes the layout. Sub-classes must call this.
+     */
+    public void createFormContent( IFormEditorPageSite site ) {
+        site.getPageBody().setLayout( new FormLayout() );
+        this.pageSite = site;
     }
 
     public String getId() {
@@ -63,8 +104,207 @@ public abstract class DefaultFormEditorPage
         return title;
     }
 
+    public byte getPriority() {
+        return 1;
+    }
+
     public Action[] getEditorActions() {
         return null;
+    }
+
+
+    /**
+     * Creates a new section in the form. The section is expanded by default.
+     * 
+     * @param sectionTitle The title of this section.
+     * @param rightOf True indicates that the section is placed right of the
+     *        <code>relative</code>, or at the bottom otherwise.
+     * @param relative
+     * @return The newly created section.
+     */
+    protected Section newSection( String sectionTitle, boolean rightOf, Composite relative ) {
+        Composite parent = pageSite.getPageBody();
+        IFormEditorToolkit tk = pageSite.getToolkit();
+        
+        Section section = tk.createSection( parent, Section.TITLE_BAR /*| Section.TREE_NODE*/ );
+        section.setText( sectionTitle );
+        section.setExpanded( true );
+        //section.setLayout( new FillLayout() );
+
+        Composite client = tk.createComposite( section );
+        Layout layout = new FillLayout( SWT.VERTICAL );
+        client.setLayout( layout );
+        section.setClient( client );
+        
+        if (relative == null) {
+            section.setLayoutData( new SimpleFormData( SECTION_SPACING )
+                    .left( 0 ).right( 100 ).top( 0, 0 ).create() );
+        }
+        else if (rightOf) {
+            FormData data = (FormData)relative.getLayoutData();
+            data.right = new FormAttachment( section );
+            
+            section.setLayoutData( new SimpleFormData( SECTION_SPACING )
+                    .left( 50 ).right( 100 ).top( 0, 0 ).create() );
+        }
+        return section;
+    }
+
+
+    protected Control applyLayout( Control field ) {
+            // RowLayout
+            if (field.getParent().getLayout() instanceof RowLayout) {
+                // width defines the minimum width of the entire form
+                // before horiz. scrollbar starts to appear
+                RowData layoutData = new RowData( 300, SWT.DEFAULT );
+                field.setLayoutData( layoutData );
+            }
+            
+            // FormLayout
+            else if (field.getParent().getLayout() instanceof FormLayout) {
+                // width defines the minimum width of the entire form
+                // before horiz. scrollbar starts to appear
+              SimpleFormData formData = new SimpleFormData().width( 40 ).left( 0, 3 ).right( 100, -3 );
+              field.setLayoutData( formData.create() );
+    
+    //        FormData layoutData = new FormData( 40, SWT.DEFAULT );
+    //        layoutData.left = new FormAttachment( 0, DEFAULT_FIELD_SPACING_H );
+    //        layoutData.right = new FormAttachment( 100, -DEFAULT_FIELD_SPACING_H );
+    //        layoutData.top = lastLayoutElm != null
+    //                ? new FormAttachment( lastLayoutElm, DEFAULT_FIELD_SPACING_V )
+    //                : new FormAttachment( 0 );
+    //        field.setLayoutData( layoutData );
+    //
+    //        lastLayoutElm = field;
+            }
+            return field;
+        }
+
+    /**
+     * 
+     * 
+     * @param parent
+     * @param propertyName
+     * @return A new builder that can be used to set several aspects of the form
+     *         field and to actually {@link FormFieldBuilder#create()} the field
+     *         inthe form.
+     */
+    protected FormFieldBuilder newFormField( String propertyName ) {
+        return new FormFieldBuilder( propertyName );
+    }
+
+
+    /**
+     * This field builder allows to create a new form field. It provides fluent a
+     * fluent API that allows to set several aspects of the result. If an aspect is
+     * not set then a default is computed.
+     */
+    public class FormFieldBuilder {
+        
+        private String          propName;
+        
+        private Composite       parent;
+        
+        private String          label;
+        
+        private Property        prop;
+        
+        private IFormField      field;
+        
+        private IFormFieldValidator validator;
+
+        
+        public FormFieldBuilder( String propName ) {
+            this.propName = propName;
+            this.label = propName;
+        }
+
+        public FormFieldBuilder( String propName, Composite parent) {
+            this( propName );
+            this.parent = parent;
+        }
+        
+        public FormFieldBuilder setParent( Composite parent ) {
+            this.parent = parent instanceof Section 
+                    ? (Composite)((Section)parent).getClient() : parent;
+            return this;
+        }
+
+        public FormFieldBuilder setProperty( Property prop ) {
+            this.prop = prop;
+            return this;
+        }
+
+        public FormFieldBuilder setLabel( String label ) {
+            this.label = label;
+            return this;
+        }
+
+        public FormFieldBuilder setField( IFormField field ) {
+            this.field = field;
+            return this;
+        }
+
+        public FormFieldBuilder setValidator( IFormFieldValidator validator ) {
+            this.validator = validator;
+            return this;
+        }
+
+        public Composite create() {
+            if (parent == null) {
+                parent = pageSite.getPageBody();
+            }
+            if (prop == null) {
+                prop = feature.getProperty( propName );                
+            }
+            if (field == null) {
+                Class binding = prop.getType().getBinding();
+                if (binding.equals( Number.class )) {
+                    field = new TextFormField();
+                    validator = new NumberValidator( binding, Polymap.getSessionLocale() );
+                }
+                else {
+                    field = new TextFormField();
+                }
+            }
+            Composite result = pageSite.newFormField( parent, prop, field, validator, label );
+            applyLayout( result );
+            return result;
+        }
+    }
+    
+    
+    /**
+     * Checks if the name of type of the {@link Feature} of this form contains one
+     * of the given Strings. This method can be used to check if the page is compatible
+     * to the given feature and its type.
+     *
+     * @param names The strings to check against the feature type name.
+     * @param ignoreCase Ignore the character case of the strings.
+     * @param considerNameSpace Compare with namespace of the feature type too.
+     * @return
+     */
+    protected boolean featureNameContains( String[] names, boolean ignoreCase, boolean considerNameSpace ) {
+        assert names != null;
+        String typeName = feature.getType().getName().getLocalPart();
+        String ns = feature.getType().getName().getNamespaceURI();
+        
+        for (String name : names) {
+            name = ignoreCase ? name.toLowerCase() : name;
+            if (ignoreCase && typeName.toLowerCase().contains( name )) {
+                return true;
+            }
+            else if (!ignoreCase && typeName.contains( name )) {
+                return true;
+            }
+            else if (considerNameSpace && ignoreCase && ns.toLowerCase().contains( name )) {
+                return true;
+            }
+            else if (considerNameSpace && !ignoreCase && ns.contains( name )) {
+                return true;
+            }
+        }
+        return false;
     }
     
 }

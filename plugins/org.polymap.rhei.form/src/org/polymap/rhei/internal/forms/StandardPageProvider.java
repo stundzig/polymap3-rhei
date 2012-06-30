@@ -84,6 +84,10 @@ public class StandardPageProvider
                 return  "Standard";
             }
 
+            public byte getPriority() {
+                return -1;
+            }
+
             public Action[] getEditorActions() {
                 return null;
             }

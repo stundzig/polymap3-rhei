@@ -43,6 +43,16 @@ public interface IFormEditorPage {
     Action[] getEditorActions();
     
     String getId();
+
+
+    /**
+     * The priority of this page within the entiry editor of a feature.
+     * 
+     * @return A value of 0 specifies that this page has no special priority;
+     *         {@link Byte#MAX_VALUE} that this page is shown "on top" of the stack
+     *         of all pages and it is shown by default.
+     */
+    byte getPriority();
     
     /**
      * Creates the user interface of this form page.

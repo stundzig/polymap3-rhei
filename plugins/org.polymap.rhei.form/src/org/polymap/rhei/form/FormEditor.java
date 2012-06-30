@@ -19,6 +19,7 @@ package org.polymap.rhei.form;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -366,22 +367,36 @@ public class FormEditor
      * are called.
      */
     protected void addPages() {
+        List<IFormEditorPage> _pages = new ArrayList();
+        
+        // get all pages
         for (FormPageProviderExtension ext : FormPageProviderExtension.allExtensions()) {
             try {
                 IFormPageProvider provider = ext.newPageProvider();
-                List<IFormEditorPage> _pages = provider.addPages( this, getFeature() );
+                _pages.addAll( provider.addPages( this, getFeature() ) );
+            }
+            catch (CoreException e) {
+                log.warn( "Exception while initializing pages of FormEditor.", e );
+            }
+        }
 
-                if (_pages != null) {
-                    for (IFormEditorPage page : _pages) {
-                        FormEditorPageContainer wrapper = new FormEditorPageContainer( page, this, page.getId(), page.getTitle() );
-                        addPage( wrapper );
-                        pages.add( wrapper );
+        // sort
+        Collections.sort( _pages, new Comparator<IFormEditorPage>() {
+            public int compare( IFormEditorPage p1, IFormEditorPage p2 ) {
+                return -(p1.getPriority() - p2.getPriority());
+            }
+        });
+        
+        // add pages
+        for (IFormEditorPage page : _pages) {
+            try {
+                FormEditorPageContainer wrapper = new FormEditorPageContainer( page, this, page.getId(), page.getTitle() );
+                addPage( wrapper );
+                pages.add( wrapper );
 
-                        if (ext.isStandard() && getActivePage() == -1) {
-                            setActivePage( page.getId() );
-                            //setPartName( page.getTitle() );
-                        }
-                    }
+                if (getActivePage() == -1) {
+                    setActivePage( page.getId() );
+                    //setPartName( page.getTitle() );
                 }
             }
             catch (CoreException e) {
