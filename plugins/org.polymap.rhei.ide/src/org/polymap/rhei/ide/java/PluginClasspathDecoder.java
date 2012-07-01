@@ -14,7 +14,10 @@
  */
 package org.polymap.rhei.ide.java;
 
+import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
@@ -26,6 +29,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,16 +41,19 @@ import org.eclipse.jdt.internal.core.ClasspathEntry;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-@SuppressWarnings("restriction")
 public class PluginClasspathDecoder {
 
     private static Log log = LogFactory.getLog( PluginClasspathDecoder.class );
     
-    private URL                 res;
+    private InputStream             in;
     
     
-    public PluginClasspathDecoder( URL res ) {
-        this.res = res;
+    public PluginClasspathDecoder( URL res ) throws IOException {
+        this.in = res.openStream();
+    }
+
+    public PluginClasspathDecoder( File file ) throws IOException {
+        this.in = new BufferedInputStream( FileUtils.openInputStream( file ) );
     }
 
 
@@ -68,9 +75,7 @@ public class PluginClasspathDecoder {
 
     
     private Document readClasspathDocument() throws Exception {
-        InputStream in = null;
         try {
-            in = res.openStream();
             DocumentBuilder parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document doc = parser.parse( new InputSource( in ) );
             //new XMLSerializer( System.out, new OutputFormat() ).asDOMSerializer().serialize( doc );

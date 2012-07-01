@@ -1,40 +1,89 @@
 package forms;
 
 import org.polymap.rhei.form.*;
+import org.polymap.rhei.field.*;
 import org.geotools.data.*;
 import org.opengis.feature.*;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.*;
+//import org.eclipse.swt.layout.*;
+import org.eclipse.swt.widgets.*;
+import org.eclipse.ui.forms.widgets.*;
 
-//Ausgabe aller Variabler für Testzwecke
-//for (int i=0; i<this.variables.length; i++) {
-//    System.out.println( "    variable: " + this.variables[i] );
-//}
-//System.out.println( "feature: " + _feature );
-//System.out.println( "fs: " + _fs );
+import org.polymap.rhei.script.java.*;
 
-public class TestFormPage
-        extends DefaultFormEditorPage {
+/**
+ * Das ist ein Beispiel für ein Formular. 
+ */ 
+public class TestFormPage 
+        extends ScriptedFormEditorPage {
 
+    /** Möglihe Werte für das Status-Feld. */
+    public static final String[]    STATUS = new String[] {"genehmigt", "errichtet", "beantragt" };
+    
+        
     public TestFormPage() {
-        super( "__beanshell__", "BeanShell!", _feature, _fs );
+        // ID und Titel dieses Formulars setzen; 
+        // der Titel wird im Reiter unterhalb des Formulars angezeigt
+        super( "__wea__", "WEA-Basisdaten" );
     }
 
+
+    /**
+     * Prüfen ob dieses Formular mit dem übergebenen Feature arbeiten kann.
+     */
+    public boolean wantsToBeShown() {
+        return featureNameContains( new String[] {"genehmigt", "polymap"}, true, true );
+    }
+
+
+    /**
+     * Anlegen des Formulars mit allen Feldern.
+     */
     public void createFormContent( IFormEditorPageSite site ) {
-        site.setFormTitle( feature.getIdentifier().getID() );
-        site.getPageBody().setLayout( new FormLayout() );
+        super.createFormContent( site ); 
 
-        Label l = new Label( site.getPageBody(), SWT.NONE );
-        l.setText( "Hello from BeanShell!" );
-        //Composite field = site.newFormFiel( null, "", new TextFormField(), null );
-        //field.setLayoutData( layoutData );
+        FeatureStore fs;
+        Feature f;
+        
+        // den Titel des gesamten Formulareditors setzen; 
+        // dieser Titel wird oberhalb des Formulars angezeigt
+        site.setFormTitle( "WEA (" + feature.getIdentifier().getID() + ")" );
+
+        // den Bereich für die Basisdaten anlegen; 
+        Section section1 = newSection( "Basisdaten", false, null );
+        newFormField( "WEA_NR" )
+                .setParent( section1 )
+                .setLabel( "Nummer" ).create();
+        
+        newFormField( "LAGE" )
+                .setParent( section1 )
+                .setLabel( "Lage" ).create();
+        
+        newFormField( "ANTR_STELL" )
+                .setParent( section1 )
+                .setLabel( "Antragsteller" ).create();
+        
+        newFormField( "ANTR_DAT" )
+                .setParent( section1 )
+                .setLabel( "gestellt am" )
+                .setField( new DateTimeFormField() ).create();
+        
+        newFormField( "STATUS" )
+                .setParent( section1 )
+                .setLabel( "Status" )
+                .setField( new PicklistFormField( STATUS, new int[0] ) )
+                .create();
+
+        // den Bereich für Technische Daten;
+        // etwas kompaktere Schreibweise
+        Section section2 = newSection( "Technische Daten", true, section1 );
+        newFormField( "NAB_HOEHE" ).setParent( section2 ).setLabel( "Nabenhöhe (m)" ).create();
+        newFormField( "ROTOR" ).setParent( section2 ).setLabel( "Durchmesser (m)" ).create();
     }
+
 
     public void finalize() {
         System.out.println( "TestFormPage: FINALIZED!");
     }
 }
-
-//IFormEditorPage result = new TestFormPage();

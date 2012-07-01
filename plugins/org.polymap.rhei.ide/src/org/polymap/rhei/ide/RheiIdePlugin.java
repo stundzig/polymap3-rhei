@@ -33,7 +33,12 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
@@ -126,16 +131,33 @@ public class RheiIdePlugin
 
     protected void initScriptsProject() {
         try {
-            IProject project = RheiScriptPlugin.getOrCreateScriptProject();
+            final IProject project = RheiScriptPlugin.getOrCreateScriptProject();
 
             JavaProjectInitializer.initScriptsProject( project );
 
             // some debug/tests
-            IJavaProject javaProject = JavaCore.create( project ); 
+            final IJavaProject javaProject = JavaCore.create( project );
+            
+            // force reindexing hierachy in long running job
+            new Job( "Reindexing Java..." ) {
+                protected IStatus run( IProgressMonitor monitor ) {
+                    try {
+                        log.info( "Start refreshing Java project..." );
+                        project.refreshLocal( 10, monitor );
+                        project.build( IncrementalProjectBuilder.FULL_BUILD, monitor );
+                        
+//                        for (IClasspathEntry entry : javaProject.getResolvedClasspath( false )) {
+//                            log.info( "entry: " + entry.getPath() + ", src: " + entry.getSourceAttachmentPath() );
+//                        }
 
-//            // force reindexing hierachy
-            project.refreshLocal( 10, null );
-//            project.build( IncrementalProjectBuilder.FULL_BUILD, null );
+                        return Status.OK_STATUS;
+                    }
+                    catch (Exception e) {
+                        log.warn( "Error while refreshing Java project.", e );
+                        return Status.OK_STATUS;
+                    }
+                }
+            }.schedule( 3000 );
 
             
 //            IFolder srcFolder = project.getFolder( "src" );
