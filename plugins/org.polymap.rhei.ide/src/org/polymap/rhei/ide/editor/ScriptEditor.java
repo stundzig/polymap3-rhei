@@ -195,7 +195,7 @@ public class ScriptEditor
             IResourceDelta rootDelta = event.getDelta();
             // find my changes
             IResourceDelta fileDelta = rootDelta.findMember( getEditorInput().getFile().getFullPath() );
-            if (fileDelta.getKind() == IResourceDelta.REMOVED) {
+            if (fileDelta != null && fileDelta.getKind() == IResourceDelta.REMOVED) {
                 getSite().getPage().closeEditor( this, false );
             }
             else if (fileDelta != null && editor != null) {

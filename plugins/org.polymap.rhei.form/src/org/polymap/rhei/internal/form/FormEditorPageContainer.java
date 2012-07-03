@@ -29,6 +29,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.ScrollBar;
 
 import org.eclipse.jface.action.Action;
@@ -80,7 +81,7 @@ public class FormEditorPageContainer
 
     private IFormEditorToolkit          toolkit;
 
-    private List<FormFieldComposite>    fields = new ArrayList();
+    private List<FormFieldComposite>    fields = new ArrayList( 32 );
 
     /** Listeners of type {@link IFormFieldListener}. */
     private ListenerList                listeners = new ListenerList( ListenerList.IDENTITY );
@@ -324,6 +325,18 @@ public class FormEditorPageContainer
     public void reloadEditor()
     throws Exception {
         ((FormEditor)getEditor()).doLoad( new NullProgressMonitor() );
+    }
+
+
+    public void clearFields() {
+        dispose();
+        
+        // dispose any left sections and stuff
+        for (Control child : getPageBody().getChildren()) {
+            if (!child.isDisposed()) {
+                child.dispose();
+            }
+        }
     }
 
 }

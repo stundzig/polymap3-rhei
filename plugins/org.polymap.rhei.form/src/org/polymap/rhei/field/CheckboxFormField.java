@@ -56,6 +56,7 @@ public class CheckboxFormField
     }
 
     public void dispose() {
+        checkbox.dispose();
     }
 
     public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {

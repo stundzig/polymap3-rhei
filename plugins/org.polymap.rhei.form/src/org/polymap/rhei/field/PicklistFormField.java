@@ -160,6 +160,7 @@ public class PicklistFormField
 
     
     public void dispose() {
+        combo.dispose();
     }
 
 

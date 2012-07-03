@@ -42,9 +42,6 @@ public class TextFormField
         super.init( _site );
     }
 
-    public void dispose() {
-    }
-
     public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {
         Text text = (Text)super.createControl( parent, toolkit, SWT.MULTI | SWT.WRAP | SWT.V_SCROLL | SWT.H_SCROLL );
         

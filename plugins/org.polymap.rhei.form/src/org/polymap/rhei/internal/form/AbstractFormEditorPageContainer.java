@@ -233,4 +233,17 @@ public abstract class AbstractFormEditorPageContainer
         doLoad( new NullProgressMonitor() );
     }
 
+    
+    public void clearFields() {
+        throw new RuntimeException( "not yet implemented." );
+//        dispose();
+//        
+//        // dispose any left sections and stuff
+//        for (Control child : getPageBody().getChildren()) {
+//            if (!child.isDisposed()) {
+//                child.dispose();
+//            }
+//        }
+    }
+
 }

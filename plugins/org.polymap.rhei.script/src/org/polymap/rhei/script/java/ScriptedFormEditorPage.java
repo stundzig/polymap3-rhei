@@ -20,7 +20,7 @@ import org.opengis.feature.Feature;
 import org.polymap.rhei.form.DefaultFormEditorPage;
 
 /**
- * Provides the base class for BeanShell scripted forms.
+ * Provides the base class for BeanShell/Java scripted forms.
  * <p/>
  * There are the following variables available:
  * <dl>
@@ -40,5 +40,5 @@ public abstract class ScriptedFormEditorPage
         super( id, title, (Feature)ScriptParams.get( "feature" ), (FeatureStore)ScriptParams.get( "fs" ) );
     }
 
-
+    // re-run editor actions are provided by ScriptedFormPageProvider#PageWrapper
 }

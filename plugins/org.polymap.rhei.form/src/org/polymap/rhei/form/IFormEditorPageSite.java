@@ -96,5 +96,7 @@ public interface IFormEditorPageSite {
      * @return True if the page has unsaved changes.
      */
     public boolean isDirty();
+    
+    public void clearFields();
 
 }

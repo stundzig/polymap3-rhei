@@ -58,6 +58,7 @@ public class StringFormField
     }
 
     public void dispose() {
+        text.dispose();
     }
 
     public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {

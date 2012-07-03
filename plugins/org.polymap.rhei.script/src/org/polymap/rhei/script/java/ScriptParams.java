@@ -18,9 +18,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This is a helper for BeanShell scripts to get script params in a way the Java
- * compiler does not complain about. Use this if you want to develop the script in an
- * IDE, like the Rhei IDE, to avoid compiler error.
+ * Helper for BeanShell scripts to deliver script params in a way the Java compiler
+ * does not complain about. Use this if you want to develop the script in an IDE,
+ * like the Rhei IDE, to avoid compiler error.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */

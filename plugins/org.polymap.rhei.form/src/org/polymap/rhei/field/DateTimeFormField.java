@@ -74,6 +74,7 @@ public class DateTimeFormField
 
     
     public void dispose() {
+        datetime.dispose();
     }
 
     
