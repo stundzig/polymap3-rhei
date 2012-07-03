@@ -170,5 +170,21 @@
          </commandParameter>
       </command>
    </extension>
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            adaptable="false"
+            id="org.polymap.rhei.ide.popup.deleteFile"
+            objectClass="org.eclipse.core.resources.IFile">
+         <action
+               class="org.polymap.rhei.ide.navigator.DeleteFileAction"
+               enablesFor="+"
+               icon="icons/etool16/delete_edit.gif"
+               id="org.polymap.rhei.ide.action.deleteFile"
+               label="Delete"
+               style="push">
+         </action>
+      </objectContribution>
+   </extension>
 
 </plugin>

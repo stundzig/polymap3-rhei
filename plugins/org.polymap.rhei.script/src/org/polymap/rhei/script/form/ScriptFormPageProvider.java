@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 
 import org.opengis.feature.Feature;
 
@@ -37,6 +38,8 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
+
+import org.polymap.core.workbench.PolymapWorkbench;
 
 import org.polymap.rhei.form.FormEditor;
 import org.polymap.rhei.form.IFormEditorPage;
@@ -57,7 +60,7 @@ public class ScriptFormPageProvider
 
     private static final ScriptEngineManager    manager = new ScriptEngineManager();
     
-    public static final Pattern                 javaClassPattern = Pattern.compile( "class ([a-zA-Z_]+)" );
+    public static final Pattern                 javaClassPattern = Pattern.compile( "class ([a-zA-Z0-9_]+)" );
     
 
     public ScriptFormPageProvider() {
@@ -110,6 +113,10 @@ public class ScriptFormPageProvider
                             else {
                                 log.warn( "No ScriptEngine for extension: " + file.getFileExtension() );
                             }
+                        }
+                        catch (ScriptException e) {
+                            PolymapWorkbench.handleError( RheiScriptPlugin.PLUGIN_ID, ScriptFormPageProvider.this,
+                                    "An error occured while excuting a script.", e );
                         }
                         catch (Exception e) {
                             log.warn( "Script error: ", e );

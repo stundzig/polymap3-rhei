@@ -26,9 +26,12 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.navigator.CommonNavigator;
+import org.eclipse.ui.navigator.CommonViewer;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -43,7 +46,8 @@ import org.polymap.rhei.ide.RheiIdePlugin;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class ProjectNavigator
-        extends CommonNavigator {
+        extends CommonNavigator 
+        implements IResourceChangeListener {
 
     private static Log log = LogFactory.getLog( ProjectNavigator.class );
 
@@ -51,9 +55,27 @@ public class ProjectNavigator
 
     
     public ProjectNavigator() {
+        ResourcesPlugin.getWorkspace().addResourceChangeListener( this, 
+                /*IResourceChangeEvent.POST_BUILD |*/ IResourceChangeEvent.POST_CHANGE );
+    }
+
+    
+    public void dispose() {
+        ResourcesPlugin.getWorkspace().removeResourceChangeListener( this );
     }
 
 
+    public void resourceChanged( IResourceChangeEvent ev ) {
+        log.info( "Resource changed: type=" + ev.getType() );
+        final CommonViewer viewer = getCommonViewer();
+        viewer.getControl().getDisplay().asyncExec( new Runnable() {
+            public void run() {
+                viewer.refresh();
+            }
+        });
+    }
+
+    
     public void createPartControl( Composite parent ) {        
         super.createPartControl( parent );
         getSite().setSelectionProvider( getCommonViewer() );

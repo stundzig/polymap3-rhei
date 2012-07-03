@@ -221,13 +221,13 @@ public class FormEditorPageContainer
         form = managedForm;
         toolkit = new FormEditorToolkit( form.getToolkit() );
         
-        // ask the delegate to create content
-        page.createFormContent( this );
         try {
+            // ask the delegate to create content
+            page.createFormContent( this );
             doLoad( new NullProgressMonitor() );
         }
         catch (Exception e) {
-            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, e.getLocalizedMessage(), e );
+            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "An error occured while creating the new page.", e );
         }
 
         // XXX hack: help the ScrolledCompositeLayout to correctly display
