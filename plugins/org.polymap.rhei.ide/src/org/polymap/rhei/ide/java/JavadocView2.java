@@ -14,9 +14,11 @@
  */
 package org.polymap.rhei.ide.java;
 
+import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -44,10 +46,12 @@ import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.Signature;
 import org.eclipse.jdt.ui.JavadocContentAccess;
 
 import org.polymap.core.runtime.Polymap;
+import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.UIJob;
 
 /**
@@ -65,6 +69,10 @@ public class JavadocView2
 
     public static final String  ID = "org.polymap.rhei.ide.JavadocView";
     
+    public static final String  METHOD_ICON = "methpub_obj.gif";
+    public static final String  CLASS_ICON = "class_obj.gif";
+    public static final String  FIELD_ICON = "field_public_obj.gif";
+
     private Browser             browser;
     
     private ISelectionListener  selectionListener;
@@ -130,6 +138,7 @@ public class JavadocView2
 
         private IMember     member;
         
+        
         /**
          * Finds the {@link IMember} for the given element.
          */
@@ -152,7 +161,9 @@ public class JavadocView2
             }
         }
 
+        
         public boolean canRun() { return member != null; }
+        
         
         /**
          * Updates the browser content. 
@@ -161,10 +172,9 @@ public class JavadocView2
                 throws Exception {
             assert member != null;
             try {
-                Reader reader = JavadocContentAccess.getHTMLContentReader( member, true, true );
-                String html = reader != null ? IOUtils.toString( reader ) : "";
-
-                final String pageHtml = createPageHtml( html );
+                Timer timer = new Timer();
+                final String pageHtml = createPageHtml();
+                log.info( "Javadoc: " + pageHtml.length() + " bytes generated in " + timer.elapsedTime() + "ms" );
 
                 Polymap.getSessionDisplay().asyncExec( new Runnable() {
                     public void run() {
@@ -177,18 +187,15 @@ public class JavadocView2
             }
         }
         
-        protected String createPageHtml( String docHtml ) {
-            String icon = "unknown_obj.gif";
-            if (member instanceof IType) {
-                icon = "class_obj.gif";
-            }
-            else if (member instanceof IMethod) {
-                icon = "methpub_obj.gif";
-            }
-            else if (member instanceof IField) {
-                icon = "field_public_obj.gif";
-            }
-
+        
+        private String readJavadoc( IMember elm )
+        throws JavaModelException, IOException {
+            Reader reader = JavadocContentAccess.getHTMLContentReader( elm, true, true );
+            return reader != null ? IOUtils.toString( reader ) : "";
+        }
+        
+        
+        protected String createPageHtml() {
             StringBuilder buf = new StringBuilder( 4*1024 );
             buf.append( "<head>\n" );
             buf.append( "<style TYPE=\"text/css\">\n" );
@@ -196,34 +203,21 @@ public class JavadocView2
             buf.append( "  dt {font-weight:bold;}\n" );
             buf.append( "  code {border-bottom:1px dotted black;}\n" );
             buf.append( "  pre {margin:0px 0px;}\n" );
-            buf.append( "  h3 {vertical-align:middle; font-size:1.0em;}\n" );
+            buf.append( "  h3 {vertical-align:middle; font-size:1.0em; /*text-shadow: 0px 1px 1px #bfbfbf;*/}\n" );
+            buf.append( "  h2 {vertical-align:middle; font-size:1.2em;}\n" );
             buf.append( "  img {vertical-align:middle; margin-right:5px;}\n" );
             buf.append( "</style>\n" );
             buf.append( "</head>\n" );
             buf.append( "<body>" );
-            buf.append( "  <h3><img src=\"../../rhei-ide-icons/obj16/").append( icon ).append( "\">" );
             try {
                 if (member instanceof IMethod) {
-                    IMethod m = (IMethod)member;
-                    buf.append( Signature.getSignatureSimpleName( m.getReturnType() ) ).append( " " );
-                    buf.append( m.getElementName() ).append( "(" );
-                    
-                    String[] paramTypes = m.getParameterTypes();
-                    String[] paramNames = m.getParameterNames();
-                    
-                    for (int i=0; i<paramTypes.length; i++) {
-                        buf.append( Signature.getSignatureSimpleName( paramTypes[i] ) );
-                        buf.append( " " ).append( paramNames[i] );
-                        buf.append( i+1 < paramTypes.length ? ", " : "" );                        
-                    }
-                    buf.append( ")" );
+                    createMethodHtml( buf, (IMethod)member, true );
                 } 
                 else if (member instanceof IField ) {
-                    buf.append( Signature.toString( ((IField)member).getTypeSignature() ) );
-                    buf.append( " " ).append( member.getElementName() );
+                    createFieldHtml( buf, (IField)member );
                 }
                 else if (member instanceof IType) {
-                    buf.append( ((IType)member).getFullyQualifiedName( '.' ) );
+                    createClassHtml( buf, (IType)member );
                 }
                 else {
                     buf.append( member.getElementName() );
@@ -233,13 +227,61 @@ public class JavadocView2
                 log.warn( "", e );
                 buf.append( member.getElementName() );
             }
-            buf.append( "  </h3>" );
-//            buf.append( "  <h4>" );
-//            buf.append(      member.get
-//            buf.append( "  </h4>" );
-            buf.append(    docHtml );
             buf.append( "</body>" );
             return buf.toString();
+        }
+        
+        
+        protected void createClassHtml( StringBuilder buf, IType elm ) 
+        throws JavaModelException, IOException {
+            buf.append( "   <h3><img src=\"../../rhei-ide-icons/obj16/").append( CLASS_ICON ).append( "\">" );
+
+            // signature
+            buf.append( ((IType)member).getFullyQualifiedName( '.' ) );
+            buf.append( "  </h3>" );
+            
+            // description
+            buf.append( readJavadoc( elm ) );
+            
+            // methods
+            buf.append( "<h2 style=\"margin-top:20px; border-bottom:1px solid #b4b4b4; color: #949494;\">Methods</h2>" );
+            for (IMethod m : elm.getMethods()) {
+                createMethodHtml( buf, m, false );
+            }
+        }
+        
+
+        protected void createMethodHtml( StringBuilder buf, IMethod m, boolean showParams ) 
+        throws JavaModelException, IOException {
+            buf.append( "   <h3><img src=\"../../rhei-ide-icons/obj16/").append( METHOD_ICON ).append( "\">" );
+
+            // signature
+            buf.append( Signature.getSignatureSimpleName( m.getReturnType() ) ).append( " " );
+            buf.append( m.getElementName() ).append( "(" );
+
+            String[] paramTypes = m.getParameterTypes();
+            String[] paramNames = m.getParameterNames();
+
+            for (int i=0; i<paramTypes.length; i++) {
+                buf.append( Signature.getSignatureSimpleName( paramTypes[i] ) );
+                buf.append( " " ).append( paramNames[i] );
+                buf.append( i+1 < paramTypes.length ? ", " : "" );                        
+            }
+            buf.append( ")\n" );
+            buf.append( "  </h3>" );
+            String html = readJavadoc( m );
+            buf.append( showParams ? html : StringUtils.substringBefore( html, "<dl><dt>" ) );
+        }
+        
+
+        protected void createFieldHtml( StringBuilder buf, IField f ) 
+        throws JavaModelException, IOException {
+            buf.append( "   <h3><img src=\"../../rhei-ide-icons/obj16/").append( FIELD_ICON ).append( "\">" );
+
+            buf.append( Signature.toString( f.getTypeSignature() ) );
+            buf.append( " " ).append( f.getElementName() );
+            buf.append( "  </h3>" );
+            buf.append( readJavadoc( f ) );
         }
         
     }
