@@ -126,10 +126,12 @@ public class LuceneQueryProvider
         query.add( typeQuery, BooleanClause.Occur.MUST );
         query.add( filterQuery, BooleanClause.Occur.MUST );
 
-        log.debug( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
+        log.info( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
 
         final int firstResult = input.getStartIndex() != null ? input.getStartIndex() : 0;
-        final int maxResults = input.getMaxFeatures() > 0 ? input.getMaxFeatures()-firstResult : 1000000;
+        int maxFeatures = input.getMaxFeatures();
+        final int maxResults =  maxFeatures > 0 && maxFeatures < Integer.MAX_VALUE  
+                ? input.getMaxFeatures()-firstResult : 1000000;
 
         // execute Lucene query
         Timer timer = new Timer();

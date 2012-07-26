@@ -58,8 +58,9 @@ import com.google.common.base.Joiner;
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.recordstore.IRecordState;
 import org.polymap.core.runtime.recordstore.QueryExpression;
+import org.polymap.core.runtime.recordstore.RecordQuery;
+import org.polymap.core.runtime.recordstore.ResultSet;
 import org.polymap.core.runtime.recordstore.SimpleQuery;
-import org.polymap.core.runtime.recordstore.IRecordStore.ResultSet;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordStore;
 import org.polymap.core.runtime.recordstore.lucene.ValueCoders;
 
@@ -206,9 +207,10 @@ class LuceneQueryParserImpl {
         try {
             Timer timer = new Timer();
             String lengthFieldname = baseFieldname + "__length";
-            SimpleQuery query = new SimpleQuery().setMaxResults( 1 )
+            RecordQuery query = new SimpleQuery()
                     .eq( "type", resultType )
-                    .sort( lengthFieldname, SimpleQuery.DESC, Integer.class );
+                    .sort( lengthFieldname, SimpleQuery.DESC, Integer.class )
+                    .setMaxResults( 1 );
             ResultSet lengthResult = store.find( query );
             IRecordState biggest = lengthResult.get( 0 );
             maxElements = biggest.get( lengthFieldname );

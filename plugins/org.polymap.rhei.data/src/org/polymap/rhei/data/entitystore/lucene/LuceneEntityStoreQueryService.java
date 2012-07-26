@@ -113,42 +113,6 @@ public interface LuceneEntityStoreQueryService
                         }
                     }
                 } );
-                
-//                return new Iterable<EntityReference>() {
-//
-//                    public Iterator<EntityReference> iterator() {
-//                        
-//                        return new Iterator<EntityReference>() {
-//                    
-//                            private int     index = 0;
-//
-//                            public boolean hasNext() {
-//                                return index < scoreDocs.length;
-//                            }
-//
-//                            public EntityReference next() {
-//                                if (hasNext()) {
-//                                    try {
-//                                        int docnum = scoreDocs[index++].doc;
-//                                        Document doc = searcher.doc( docnum, identityFieldSelector );
-//                                        return new LuceneEntityReference( doc.get( LuceneRecordState.ID_FIELD ), docnum );
-//                                    }
-//                                    catch (Exception e) {
-//                                        throw new RuntimeException( e );
-//                                    }
-//                                }
-//                                else {
-//                                    throw new NoSuchElementException( "Query result count: " + scoreDocs.length );
-//                                }
-//                            }
-//
-//                            public void remove() {
-//                                throw new UnsupportedOperationException( "Removing entities from query result is not defined.");
-//                            }
-//                            
-//                        };
-//                    }
-//                };
             }
             catch (Exception e) {
                 throw new EntityFinderException( e );
