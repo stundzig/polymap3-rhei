@@ -14,9 +14,14 @@
  */
 package org.polymap.rhei.form;
 
+import java.util.Date;
+
 import org.geotools.data.FeatureStore;
 import org.opengis.feature.Feature;
 import org.opengis.feature.Property;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
@@ -27,8 +32,6 @@ import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Layout;
-
 import org.eclipse.jface.action.Action;
 
 import org.eclipse.ui.forms.widgets.Section;
@@ -36,10 +39,12 @@ import org.eclipse.ui.forms.widgets.Section;
 import org.polymap.core.project.ui.util.SimpleFormData;
 import org.polymap.core.runtime.Polymap;
 
+import org.polymap.rhei.field.CheckboxFormField;
+import org.polymap.rhei.field.DateTimeFormField;
 import org.polymap.rhei.field.IFormField;
 import org.polymap.rhei.field.IFormFieldValidator;
 import org.polymap.rhei.field.NumberValidator;
-import org.polymap.rhei.field.TextFormField;
+import org.polymap.rhei.field.StringFormField;
 
 /**
  * Provides some defaults to implement a form editor page.
@@ -55,6 +60,8 @@ import org.polymap.rhei.field.TextFormField;
 public abstract class DefaultFormEditorPage
         implements IFormEditorPage {
 
+    private static Log log = LogFactory.getLog( DefaultFormEditorPage.class );
+    
     /** The default space between the sections of the page. */
     public static final int         SECTION_SPACING = 6;
 
@@ -132,7 +139,10 @@ public abstract class DefaultFormEditorPage
         //section.setLayout( new FillLayout() );
 
         Composite client = tk.createComposite( section );
-        Layout layout = new FillLayout( SWT.VERTICAL );
+        FillLayout layout = new FillLayout( SWT.VERTICAL );
+        layout.spacing = 1;
+        layout.marginWidth = 2;
+        layout.marginHeight = 2;
         client.setLayout( layout );
         section.setClient( client );
         
@@ -177,6 +187,9 @@ public abstract class DefaultFormEditorPage
     //
     //        lastLayoutElm = field;
             }
+            else {
+                log.warn( "Unknown layout type: " + field.getParent().getLayout() );
+            }
             return field;
         }
 
@@ -214,6 +227,8 @@ public abstract class DefaultFormEditorPage
         private IFormField          field;
         
         private IFormFieldValidator validator;
+        
+        private boolean             enabled = true;
 
         
         public FormFieldBuilder( String propName ) {
@@ -258,6 +273,11 @@ public abstract class DefaultFormEditorPage
             return this;
         }
 
+        public FormFieldBuilder setEnabled( boolean enabled ) {
+            this.enabled = enabled;
+            return this;
+        }
+
         public Composite create() {
             if (parent == null) {
                 parent = pageSite.getPageBody();
@@ -270,16 +290,31 @@ public abstract class DefaultFormEditorPage
             }
             if (field == null) {
                 Class binding = prop.getType().getBinding();
-                if (binding.equals( Number.class )) {
-                    field = new TextFormField();
+                // Number
+                if (Number.class.isAssignableFrom( binding )) {
+                    field = new StringFormField();
                     validator = new NumberValidator( binding, Polymap.getSessionLocale() );
                 }
+                // Date
+                else if (Date.class.isAssignableFrom( binding )) {
+                    field = new DateTimeFormField();
+                }
+                // Boolean
+                else if (Date.class.isAssignableFrom( binding )) {
+                    field = new CheckboxFormField();
+                }
+                // default: String
                 else {
-                    field = new TextFormField();
+                    field = new StringFormField();
                 }
             }
             Composite result = pageSite.newFormField( parent, prop, field, validator, label );
             applyLayout( result );
+            
+            // editable
+            if (!enabled) {
+                pageSite.setFieldEnabled( prop.getName().getLocalPart(), enabled );
+            }
             return result;
         }
     }
