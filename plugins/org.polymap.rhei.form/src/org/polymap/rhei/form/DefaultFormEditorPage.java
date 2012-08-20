@@ -195,21 +195,23 @@ public abstract class DefaultFormEditorPage
 
 
     /**
-     * This field builder allows to create a new form field. It provides fluent a
-     * fluent API that allows to set several aspects of the result. If an aspect is
-     * not set then a default is computed.
+     * This field builder allows to create a new form field. It provides a simple,
+     * chainable API that allows to set several aspects of the result. If an aspect
+     * is not set then a default is computed.
      */
     public class FormFieldBuilder {
         
-        private String          propName;
+        private String              propName;
         
-        private Composite       parent;
+        private Composite           parent;
         
-        private String          label;
+        private String              label;
         
-        private Property        prop;
+        private Feature             builderFeature;
         
-        private IFormField      field;
+        private Property            prop;
+        
+        private IFormField          field;
         
         private IFormFieldValidator validator;
 
@@ -217,6 +219,7 @@ public abstract class DefaultFormEditorPage
         public FormFieldBuilder( String propName ) {
             this.propName = propName;
             this.label = propName;
+            this.builderFeature = feature;
         }
 
         public FormFieldBuilder( String propName, Composite parent) {
@@ -235,6 +238,11 @@ public abstract class DefaultFormEditorPage
             return this;
         }
 
+        public FormFieldBuilder setFeature( Feature feature ) {
+            this.builderFeature = feature;
+            return this;
+        }
+        
         public FormFieldBuilder setLabel( String label ) {
             this.label = label;
             return this;
@@ -255,7 +263,10 @@ public abstract class DefaultFormEditorPage
                 parent = pageSite.getPageBody();
             }
             if (prop == null) {
-                prop = feature.getProperty( propName );                
+                prop = builderFeature.getProperty( propName );
+                if (prop == null) {
+                    throw new IllegalStateException( "No such property: " + propName );
+                }
             }
             if (field == null) {
                 Class binding = prop.getType().getBinding();
