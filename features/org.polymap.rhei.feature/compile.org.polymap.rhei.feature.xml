@@ -7,8 +7,8 @@
 		<ant antfile="build.xml" dir="../../../eclipse.jdt.core/org.eclipse.jdt.core" target="build.jars"/>
 		<ant antfile="build.xml" dir="../../../eclipse.platform.ui/bundles/org.eclipse.ui.ide" target="build.jars"/>
 		<ant antfile="build.xml" dir="../../plugins/org.polymap.rhei.form" target="build.jars"/>
-		<ant antfile="build.xml" dir="../../plugins/org.polymap.rhei.data" target="build.jars"/>
 		<ant antfile="build.xml" dir="../../plugins/org.polymap.rhei.script" target="build.jars"/>
+		<ant antfile="build.xml" dir="../../plugins/org.polymap.rhei.data" target="build.jars"/>
 		<ant antfile="build.xml" dir="../../plugins/org.polymap.rhei.ide" target="build.jars"/>
 	</target>
 </project>
