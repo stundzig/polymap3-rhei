@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.IStatus;
 
 import org.polymap.core.data.DataPlugin;
 import org.polymap.core.data.operations.NewFeatureOperation;
-import org.polymap.core.data.ui.featureselection.LayerSelectableOperationConcern;
 import org.polymap.core.operation.IOperationConcernFactory;
 import org.polymap.core.operation.OperationConcernAdapter;
 import org.polymap.core.operation.OperationInfo;
@@ -50,7 +49,7 @@ import org.polymap.rhei.form.FormEditor;
 public class NewFeatureOperationConcern
         extends IOperationConcernFactory {
 
-    private static Log log = LogFactory.getLog( LayerSelectableOperationConcern.class );
+    private static Log log = LogFactory.getLog( NewFeatureOperationConcern.class );
 
 
     public IUndoableOperation newInstance( final IUndoableOperation op, final OperationInfo info ) {

@@ -263,7 +263,7 @@ public class LuceneEntityStoreMixin
                     sub = new SubProgressMonitor( monitor, 1 );
                     sub.beginTask( "Lucene apply", 1 );
 
-                    updater.apply();
+                    updater.apply( false );
                     
                     sub.done();
                     log.info( "...done. (" + timer.elapsedTime() + "ms)" );

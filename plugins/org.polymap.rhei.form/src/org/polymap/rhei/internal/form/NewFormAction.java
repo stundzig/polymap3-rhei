@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2010, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.internal.form;
 
@@ -21,40 +18,43 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 
 import org.eclipse.ui.IViewActionDelegate;
 import org.eclipse.ui.IViewPart;
 
+import org.polymap.core.data.PipelineFeatureSource;
 import org.polymap.core.data.operations.NewFeatureOperation;
-import org.polymap.core.data.ui.featureselection.GeoSelectionView;
+import org.polymap.core.data.ui.featureselection.FeatureSelectionView;
 import org.polymap.core.operation.OperationSupport;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.workbench.PolymapWorkbench;
+
+import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
 
 /**
  * 
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public class NewFormAction
         implements IViewActionDelegate {
 
     private static Log log = LogFactory.getLog( NewFormAction.class );
 
-    private GeoSelectionView    view;
+    private FeatureSelectionView    view;
     
     /** The layer we are associated with. Might be null. */
-    private ILayer              layer;
+    private ILayer                  layer;
 
     
     public void init( IViewPart _view ) {
-        if (view instanceof GeoSelectionView) {
+        if (view instanceof FeatureSelectionView) {
             log.debug( "init(): found GeoSelectionView..." );
-            this.view = (GeoSelectionView)_view;
+            this.view = (FeatureSelectionView)_view;
             this.layer = (view).getLayer();
             assert layer != null : "Layer must not be null.";
         }
@@ -63,8 +63,15 @@ public class NewFormAction
 
     public void run( IAction action ) {
         try {
-            NewFeatureOperation op = new NewFeatureOperation( layer, null );
-            OperationSupport.instance().execute( op, false, false );
+            PipelineFeatureSource fs = PipelineFeatureSource.forLayer( layer, false );
+            if (fs != null && fs.getSchema().getGeometryDescriptor() != null) {
+                MessageDialog.openInformation( PolymapWorkbench.getShellToParentOn(),
+                        Messages.get( "NewFormAction_noGeomTitle" ), Messages.get( "NewFormAction_noGeomMsg", layer.getLabel() ) );
+            }
+            else {
+                NewFeatureOperation op = new NewFeatureOperation( layer, null );
+                OperationSupport.instance().execute( op, false, false );
+            }
 //            FeatureId fid = op.getCreatedFid();
 //
 //            FeatureStore fs = view != null

@@ -26,6 +26,7 @@ import org.geotools.filter.visitor.DefaultFilterVisitor;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.And;
 import org.opengis.filter.BinaryComparisonOperator;
+import org.opengis.filter.ExcludeFilter;
 import org.opengis.filter.Filter;
 import org.opengis.filter.Id;
 import org.opengis.filter.IncludeFilter;
@@ -242,6 +243,11 @@ public class LuceneQueryProvider
             // INCLUDE
             else if (filter instanceof IncludeFilter) {
                 return ALL;
+            }
+            // EXCLUDE
+            else if (filter instanceof ExcludeFilter) {
+                // XXX any better way to express
+                return new TermQuery( new Term( "__does_not_exist__", "true") );
             }
             // BBOX
             else if (filter instanceof BBOX) {
