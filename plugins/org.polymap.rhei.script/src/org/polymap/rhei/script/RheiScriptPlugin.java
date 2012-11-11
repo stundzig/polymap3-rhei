@@ -63,33 +63,35 @@ public class RheiScriptPlugin
     public static IProject getOrCreateScriptProject() {
         IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
         IProject project = root.getProject( "Scripts" );
-        
-        if (!project.exists()) {
-            try {
+
+        try {
+            if (!project.exists()) {
                 // delete also ./.metadata/.plugins/org.eclipse.core.resources/.projects/Scripts/
                 project.create( null );
-                project.open( null );
-    
-                IFolder srcFolder = project.getFolder( "src" );
+            }
+            project.open( null );
+
+            IFolder srcFolder = project.getFolder( "src" );
+            if (!srcFolder.exists()) {
                 srcFolder.create( false, true, null );
-
-                IFolder formsFolder = project.getFolder( "src/forms" );
+            }
+            IFolder formsFolder = project.getFolder( "src/forms" );
+            if (!formsFolder.exists()) {
                 formsFolder.create( false, true, null );
+            }
 
-//                // copy test class
-//                URL res = RheiScriptPlugin.getDefault().getBundle().getResource( "resources/TestFormPage.java" );
-//                IFile f = formsFolder.getFile( "TestFormPage.java" );
-//                f.create( res.openStream(), 0, null );
+            //                // copy test class
+            //                URL res = RheiScriptPlugin.getDefault().getBundle().getResource( "resources/TestFormPage.java" );
+            //                IFile f = formsFolder.getFile( "TestFormPage.java" );
+            //                f.create( res.openStream(), 0, null );
 
-                IFolder procsFolder = project.getFolder( "src/procs" );
+            IFolder procsFolder = project.getFolder( "src/procs" );
+            if (!procsFolder.exists()) {
                 procsFolder.create( false, true, null );
-
-                IFolder printsFolder = project.getFolder( "src/prints" );
-                printsFolder.create( false, true, null );
             }
-            catch (Exception e) {
-                PolymapWorkbench.handleError( RheiScriptPlugin.PLUGIN_ID, null, e.getLocalizedMessage(), e );
-            }
+        }
+        catch (Exception e) {
+            PolymapWorkbench.handleError( RheiScriptPlugin.PLUGIN_ID, null, e.getLocalizedMessage(), e );
         }
         return project;
     }

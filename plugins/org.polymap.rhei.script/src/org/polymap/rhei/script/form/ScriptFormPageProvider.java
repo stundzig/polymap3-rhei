@@ -83,10 +83,10 @@ public class ScriptFormPageProvider
     public List<IFormEditorPage> addPages( final FormEditor formEditor, final Feature feature ) {
         final List<IFormEditorPage> result = new ArrayList();
 
-        IProject project = RheiScriptPlugin.getOrCreateScriptProject();
-        IFolder formsFolder = project.getFolder( "src/forms" );
-        
         try {
+            IProject project = RheiScriptPlugin.getOrCreateScriptProject();
+            IFolder formsFolder = project.getFolder( "src/forms" );
+        
             formsFolder.accept( new IResourceVisitor() {
                 public boolean visit( IResource resource ) throws CoreException {
                     if (resource instanceof IFile ) {
@@ -115,7 +115,8 @@ public class ScriptFormPageProvider
             });
         }
         catch (CoreException e) {
-            throw new RuntimeException( e );
+            // don't break everything if no forms dir or something
+            log.error( "", e );
         }
         return result;
     }

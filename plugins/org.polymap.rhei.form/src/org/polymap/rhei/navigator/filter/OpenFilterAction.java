@@ -15,8 +15,6 @@
  */
 package org.polymap.rhei.navigator.filter;
 
-import java.util.Collections;
-
 import org.opengis.filter.Filter;
 
 import org.eclipse.jface.action.Action;
@@ -24,10 +22,10 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.resource.ImageDescriptor;
 
 import org.polymap.core.data.DataPlugin;
+import org.polymap.core.data.ui.featureselection.FeatureSelectionView;
 import org.polymap.core.geohub.LayerFeatureSelectionOperation;
 import org.polymap.core.operation.OperationSupport;
 import org.polymap.core.project.ILayer;
-import org.polymap.core.project.operations.LayerSelectableOperation;
 import org.polymap.core.workbench.PolymapWorkbench;
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
@@ -74,20 +72,15 @@ public class OpenFilterAction
         if (filter == null) {
             return;
         }
-        if (!layer.isSelectable()) {
-            LayerSelectableOperation op = new LayerSelectableOperation(
-                    Collections.singletonList( layer ), true );
-            OperationSupport.instance().execute( op, false, false );
-        }
+        // XXX find an indirect way to signal that the layer has selected
+        // features; GeoHub? 
+        FeatureSelectionView.open( layer );
+        
         // change feature selection
         LayerFeatureSelectionOperation op = new LayerFeatureSelectionOperation();
         op.init( layer, filter, null, null );
         OperationSupport.instance().execute( op, true, false );
             
-//        // ensure that the view is shown
-//        // XXX allow search when incremental search is there
-//        GeoSelectionView view = GeoSelectionView.open( layer, false );
-//        
 //        // emulate a selection event so that the view can handle it
 //        GeoEvent event = new GeoEvent( GeoEvent.Type.FEATURE_SELECTED, 
 //                layer.getMap().getLabel(), 

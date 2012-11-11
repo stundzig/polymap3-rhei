@@ -45,8 +45,8 @@ import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.part.ViewPart;
 
 import org.polymap.core.project.ILayer;
+import org.polymap.core.project.LayerVisitor;
 import org.polymap.core.project.ProjectRepository;
-import org.polymap.core.project.ProjectRepository.ProjectVisitor;
 import org.polymap.core.runtime.Polymap;
 import org.polymap.core.workbench.PolymapWorkbench;
 
@@ -146,7 +146,7 @@ public class FilterView
             if (filterId != null && layerId != null) {
                 Polymap.getSessionDisplay().asyncExec( new Runnable() {
                     public void run() {
-                        ProjectRepository.instance().visitProjects( new ProjectVisitor() {
+                        ProjectRepository.instance().visit( new LayerVisitor() {
                             public void visit( ILayer layer ) {
                                 if (layer.id().equals( layerId )) {
                                     filter = FilterFactory.instance().filterForLayer( layer, filterId );

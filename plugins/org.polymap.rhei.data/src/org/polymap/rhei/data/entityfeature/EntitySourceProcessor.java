@@ -289,10 +289,14 @@ public class EntitySourceProcessor
 
     protected void getFeatures( Query query, ProcessorContext context )
     throws Exception {
-        assert query != null && query.getFilter() != null;
+        assert query != null;
+        if (query.getFilter() == null) {
+            log.warn( "Filter is NULL -> changing to EXCLUDE to prevent unwanted loading of all features! Use INCLUDE to get all." );
+        }
+        Filter filter = query.getFilter() != null ? query.getFilter() : Filter.EXCLUDE;        
 
         long start = System.currentTimeMillis();
-        log.debug( "            Filter: " + StringUtils.abbreviate( query.getFilter().toString(), 0, 256 ) );
+        log.debug( "            Filter: " + StringUtils.abbreviate( filter.toString(), 0, 256 ) );
         int firstResult = query.getStartIndex() != null ? query.getStartIndex() : 0;
         int maxResults = query.getMaxFeatures() > 0 ? query.getMaxFeatures() : Integer.MAX_VALUE;
 
@@ -341,7 +345,7 @@ public class EntitySourceProcessor
         for (FeatureId fid : buffer.added()) {
             Entity entity = entityProvider.findEntity( fid.getID() );
             Feature feature = buildFeature( entity );
-            if (query.getFilter().evaluate( feature )) {
+            if (filter.evaluate( feature )) {
                 chunk.add( feature );
             }
         }

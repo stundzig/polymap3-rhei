@@ -196,7 +196,7 @@ public class BundlesClasspathContainer
             }
         }
         for (IClasspathEntry entry : result) {
-            log.info( entry.getPath() + " -- " + entry.getSourceAttachmentPath() );
+            log.debug( entry.getPath() + " -- " + entry.getSourceAttachmentPath() );
         }
         log.info( "Classpath computed: " + result.size() + " entries. (" + timer.elapsedTime() + "ms)" );
         return result.toArray( new IClasspathEntry[ result.size() ] );

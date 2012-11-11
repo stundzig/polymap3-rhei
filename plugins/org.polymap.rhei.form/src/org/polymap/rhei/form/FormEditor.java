@@ -189,7 +189,28 @@ public class FormEditor
             // LayerListener
             layer.addPropertyChangeListener( layerListener = new LayerListener() );
         }
-        
+
+        // print/report action
+        Action reportAction = new Action( Messages.get( "FormEditor_report" ) ) {
+            public void run() {
+                try {
+//                    FeatureCollection features = FeatureCollections.newCollection();
+//                    features.add( getFeature() );
+//                    ReportOperation op = new ReportOperation( features, map, crs );
+//
+//                    OperationSupport.instance().execute( op, true, true );
+                }
+                catch (Exception e) {
+                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "", e );
+                }
+            }
+        };
+        reportAction.setImageDescriptor( ImageDescriptor.createFromURL(
+                RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/report.gif" ) ) );
+        reportAction.setToolTipText( Messages.get( "FormEditor_reportTip" ) );
+        reportAction.setEnabled( true );
+        standardPageActions.add( reportAction );
+
         // submit action
         submitAction = new Action( Messages.get( "FormEditor_submit" ) ) {
             public void run() {
