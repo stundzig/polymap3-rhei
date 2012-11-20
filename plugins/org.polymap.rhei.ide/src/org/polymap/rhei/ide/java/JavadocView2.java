@@ -199,7 +199,7 @@ public class JavadocView2
             StringBuilder buf = new StringBuilder( 4*1024 );
             buf.append( "<head>\n" );
             buf.append( "<style TYPE=\"text/css\">\n" );
-            buf.append( "  body {margin:10px; font-family:\"Segoe UI\",Tahoma,sans-serif;}\n" );
+            buf.append( "  body {margin:10px; font-family:\"Segoe UI\",Tahoma,sans-serif; font-size:11px;}\n" );
             buf.append( "  dt {font-weight:bold;}\n" );
             buf.append( "  code {border-bottom:1px dotted black;}\n" );
             buf.append( "  pre {margin:0px 0px;}\n" );
