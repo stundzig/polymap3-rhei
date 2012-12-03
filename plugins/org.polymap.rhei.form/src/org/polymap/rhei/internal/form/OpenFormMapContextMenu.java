@@ -17,6 +17,8 @@ package org.polymap.rhei.internal.form;
 import java.util.List;
 
 import org.opengis.feature.Feature;
+import org.opengis.feature.Property;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,7 +38,6 @@ import org.polymap.core.workbench.PolymapWorkbench;
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
 import org.polymap.rhei.form.FormEditor;
-
 
 /**
  * 
@@ -84,11 +85,7 @@ public class OpenFormMapContextMenu
                         final PipelineFeatureSource fs = PipelineFeatureSource.forLayer( layer, true );
                         
                         for (final Feature feature : features) {
-                            String label = Messages.get( "OpenFormMapContextMenu_label", 
-                                    StringUtils.abbreviate( feature.getIdentifier().getID(), 20, 25 ), 
-                                    layer.getLabel() );
-
-                            Action action = new Action( label ) {
+                            Action action = new Action( createLabel( feature, layer ) ) {
                                 public void run() {
                                     FormEditor.open( fs, feature, layer );
                                 }            
@@ -104,6 +101,29 @@ public class OpenFormMapContextMenu
                 }
             }
         }
+    }
+
+    
+    protected String createLabel( Feature feature, ILayer layer ) {
+        // last resort: fid
+        String featureLabel = feature.getIdentifier().getID();
+        
+        for (Property prop : feature.getProperties()) {
+            if (prop.getName().getLocalPart().equalsIgnoreCase( "name" )) {
+                featureLabel = prop.getValue().toString();
+            }
+            else if (prop.getName().getLocalPart().contains( "name" )
+                    || prop.getName().getLocalPart().contains( "Name" )) {
+                featureLabel = prop.getValue().toString();
+            }
+            else if (prop.getName().getLocalPart().equalsIgnoreCase( "number" )
+                    || prop.getName().getLocalPart().equalsIgnoreCase( "nummer" )) {
+                featureLabel = prop.getValue().toString();
+            }
+        }
+        return Messages.get( "OpenFormMapContextMenu_label", 
+                StringUtils.abbreviate( featureLabel, 0, 35 ), 
+                layer.getLabel() );
     }
 
 }
