@@ -125,8 +125,13 @@ public class FormEditorInput
 
     public void saveState( IMemento memento ) {
         if (feature != null && (fs instanceof PipelineFeatureSource)) {
-            memento.putString( "fid", feature.getIdentifier().getID() );
-            memento.putString( "layerId", ((PipelineFeatureSource)fs).getLayer().id() );
+            try {
+                memento.putString( "layerId", ((PipelineFeatureSource)fs).getLayer().id() );
+                memento.putString( "fid", feature.getIdentifier().getID() );
+            }
+            catch (NoSuchEntityException e) {
+                // layer was deleted
+            }
         }
     }
 

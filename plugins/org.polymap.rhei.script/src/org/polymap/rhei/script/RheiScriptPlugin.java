@@ -69,7 +69,7 @@ public class RheiScriptPlugin
                 // delete also ./.metadata/.plugins/org.eclipse.core.resources/.projects/Scripts/
                 project.create( null );
             }
-            project.open( null );
+           // project.open( null );
 
             IFolder srcFolder = project.getFolder( "src" );
             if (!srcFolder.exists()) {

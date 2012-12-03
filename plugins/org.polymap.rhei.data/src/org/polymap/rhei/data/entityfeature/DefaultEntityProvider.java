@@ -17,7 +17,12 @@
  */
 package org.polymap.rhei.data.entityfeature;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.geotools.filter.identity.FeatureIdImpl;
 import org.opengis.feature.type.Name;
+import org.opengis.filter.identity.FeatureId;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -105,6 +110,28 @@ public abstract class DefaultEntityProvider<T extends Entity>
     throws Exception {
         // FIXME: operation bounds are handled by AntragOperationConcern !?
         return repo.newEntity( type.getType(), null, creator );
+    }
+
+
+    @Override
+    public List<FeatureId> removeEntity( BooleanExpression query ) {
+        List<FeatureId> result = new ArrayList();
+        
+        // special FidsQueryExpression
+        if (query instanceof FidsQueryExpression) {
+            Iterable<T> entities = ((FidsQueryExpression)query).entities( repo, type.getType(), 0, 1000 );
+            for (T entity : entities) {
+                result.add( new FeatureIdImpl( entity.id() ) );
+                repo.removeEntity( entity );
+            }
+        }
+        else {
+            for (Entity entity : repo.findEntities( type.getType(), query, 0, -1 )) {
+                result.add( new FeatureIdImpl( entity.id() ) );
+                repo.removeEntity( entity );
+            }
+        }
+        return result;
     }
 
 

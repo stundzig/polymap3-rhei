@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import net.refractions.udig.catalog.IService;
 
+import org.geotools.data.DefaultQuery;
 import org.geotools.data.Query;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -212,7 +213,7 @@ public class EntitySourceProcessor
         else if (r instanceof RemoveFeaturesRequest) {
             RemoveFeaturesRequest request = (RemoveFeaturesRequest)r;
             List<FeatureId> fids = removeFeatures( request.getFilter() );
-            fireFeatureChangeEvent( fids, FeatureChangeEvent.Type.REMOVED );
+           // fireFeatureChangeEvent( fids, FeatureChangeEvent.Type.REMOVED );
             context.sendResponse( ProcessorResponse.EOP );
         }
         // ModifyFeatures
@@ -452,7 +453,16 @@ public class EntitySourceProcessor
     protected List<FeatureId> removeFeatures( Filter filter )
     throws IOException {
         log.debug( "            Filter: " + filter );
-        throw new RuntimeException( "not yet implemented." );
+        try {
+            BooleanExpression entityQuery = entityQuery( new DefaultQuery( null, filter ) );
+            return entityProvider.removeEntity( entityQuery );
+        }
+        catch (IOException e) {
+            throw e;
+        }
+        catch( Exception e ) {
+            throw new IOException( e );
+        }
     }
 
 

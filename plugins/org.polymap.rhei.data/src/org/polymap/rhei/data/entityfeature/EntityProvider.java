@@ -24,6 +24,7 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
+import org.opengis.filter.identity.FeatureId;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import org.apache.commons.collections.ListUtils;
@@ -170,5 +171,7 @@ public interface EntityProvider<T extends Entity> {
     throws Exception;
 
     public T findEntity( String id );
+
+    public List<FeatureId> removeEntity( BooleanExpression query );
 
 }

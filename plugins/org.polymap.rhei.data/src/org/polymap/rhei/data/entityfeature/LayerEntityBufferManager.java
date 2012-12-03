@@ -32,15 +32,15 @@ import com.google.common.collect.Iterables;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.core.data.FeatureChangeEvent;
-import org.polymap.core.data.FeatureChangeTracker;
-import org.polymap.core.data.FeatureEventManager;
+import org.polymap.core.data.FeatureStateTracker;
 import org.polymap.core.data.feature.buffer.LayerFeatureBufferManager;
-import org.polymap.core.model.event.ModelChangeTracker;
-import org.polymap.core.model.event.ModelHandle;
 import org.polymap.core.operation.IOperationSaveListener;
 import org.polymap.core.operation.OperationSupport;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.SessionSingleton;
+import org.polymap.core.runtime.entity.EntityStateTracker;
+import org.polymap.core.runtime.entity.EntityHandle;
+import org.polymap.core.runtime.event.EventManager;
 
 /**
  * 
@@ -98,9 +98,9 @@ public class LayerEntityBufferManager
         
         FeatureId                   id;
         
-        ModelHandle                 handle;
+        EntityHandle                 handle;
 
-        Change( FeatureId id, ModelHandle handle, FeatureChangeEvent.Type type ) {
+        Change( FeatureId id, EntityHandle handle, FeatureChangeEvent.Type type ) {
             this.id = id;
             this.type = type;
             this.handle = handle;
@@ -114,7 +114,7 @@ public class LayerEntityBufferManager
     
     private Map<FeatureId,Change>       changed = new HashMap();
     
-    private ModelChangeTracker.Updater  updater;
+    private EntityStateTracker.Updater  updater;
     
 
     LayerEntityBufferManager( ILayer layer ) {
@@ -151,9 +151,9 @@ public class LayerEntityBufferManager
      */
     public void fireFeatureChangeEvent( List<Feature> features, FeatureChangeEvent.Type eventType ) {
         for (Feature feature : features) {
-            ModelHandle handle = FeatureChangeTracker.featureHandle( feature );
+            EntityHandle handle = FeatureStateTracker.featureHandle( feature );
             try {
-                ModelChangeTracker.instance().track( this, handle, System.currentTimeMillis(), false );
+                EntityStateTracker.instance().track( this, handle, System.currentTimeMillis(), false );
                 FeatureId fid = feature.getIdentifier();
                 changed.put( fid, new Change( fid, handle, eventType ) );
             }
@@ -162,14 +162,14 @@ public class LayerEntityBufferManager
             }
         }
         FeatureChangeEvent ev = new FeatureChangeEvent( layer, eventType, features );
-        FeatureEventManager.instance().fireEvent( ev );
+        EventManager.instance().publish( ev );
     }
 
     
     public void prepareSave( OperationSupport os, IProgressMonitor monitor )
     throws Exception {
         assert updater == null;
-        updater = ModelChangeTracker.instance().newUpdater();
+        updater = EntityStateTracker.instance().newUpdater();
         for (Change change : changed.values()) {
             updater.checkSet( change.handle, null, null );
         }
@@ -181,7 +181,7 @@ public class LayerEntityBufferManager
         updater = null;
         
         FeatureChangeEvent ev = new FeatureChangeEvent( layer, FeatureChangeEvent.Type.FLUSHED, null );
-        FeatureEventManager.instance().fireEvent( ev );
+        EventManager.instance().publish( ev );
         changed.clear();
     }
 
@@ -196,7 +196,7 @@ public class LayerEntityBufferManager
     
     public void revert( OperationSupport os, IProgressMonitor monitor ) {
         FeatureChangeEvent ev = new FeatureChangeEvent( layer, FeatureChangeEvent.Type.FLUSHED, null );
-        FeatureEventManager.instance().fireEvent( ev );
+        EventManager.instance().publish( ev );
         changed.clear();
     }
 

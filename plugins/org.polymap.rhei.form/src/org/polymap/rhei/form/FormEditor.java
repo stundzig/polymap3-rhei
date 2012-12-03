@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-
 import org.geotools.data.FeatureStore;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureCollection;
@@ -68,6 +66,8 @@ import org.polymap.core.project.ILayer;
 import org.polymap.core.project.IMap;
 import org.polymap.core.qi4j.event.PropertyChangeSupport;
 import org.polymap.core.runtime.Polymap;
+import org.polymap.core.runtime.event.EventFilter;
+import org.polymap.core.runtime.event.EventHandler;
 import org.polymap.core.workbench.PolymapWorkbench;
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
@@ -148,8 +148,6 @@ public class FormEditor
 
     private OperationSaveListener       operationSaveListener;
     
-    private LayerListener               layerListener;               
-    
 
     public FormEditor() {
     }
@@ -187,7 +185,11 @@ public class FormEditor
             standardPageActions.add( zoomAction );
     
             // LayerListener
-            layer.addPropertyChangeListener( layerListener = new LayerListener() );
+            layer.addPropertyChangeListener( this, new EventFilter<PropertyChangeEvent>() {
+                public boolean apply( PropertyChangeEvent ev ) {
+                    return PropertyChangeSupport.PROP_ENTITY_REMOVED.equals( ev.getPropertyName() );
+                }
+            });
         }
 
         // print/report action
@@ -256,29 +258,13 @@ public class FormEditor
     }
 
 
-    /**
-     * Listens to property changes of the layer, especially deletion.
-     */
-    class LayerListener
-            implements PropertyChangeListener {
-
-        public void propertyChange( PropertyChangeEvent ev ) {
-            if (PropertyChangeSupport.PROP_ENTITY_REMOVED.equals( ev.getPropertyName() )) {
-                Polymap.getSessionDisplay().asyncExec( new Runnable() {
-                    public void run() {
-                        try {
-                            IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-                            page.closeEditor( FormEditor.this, false );
-                        }
-                        catch (Exception e) {
-                            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, e.getMessage(), e );
-                        }
-                    }
-                });
-            }
-        }
+    @EventHandler(display=true)
+    protected void layerChanged( PropertyChangeEvent ev ) {
+        IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+        page.closeEditor( FormEditor.this, false );
     }
-    
+
+
     /*
      * 
      */
@@ -368,7 +354,7 @@ public class FormEditor
         ILayer layer = ((FormEditorInput)getEditorInput()).getLayer();
         if (layer != null) {
             try {
-                layer.removePropertyChangeListener( layerListener );
+                layer.removePropertyChangeListener( this );
             }
             catch (NoSuchEntityException e) {
                 // layer has been deleted -> ignore
