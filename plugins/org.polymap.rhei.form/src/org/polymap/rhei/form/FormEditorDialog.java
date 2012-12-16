@@ -1,7 +1,6 @@
 /*
  * polymap.org
- * Copyright 2011, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2011-2012, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -137,7 +136,7 @@ public class FormEditorDialog
             extends AbstractFormEditorPageContainer {
 
         public PageContainer( IFormEditorPage page ) {
-            super( page, "_id_", "_title_" );
+            super( FormEditorDialog.this, page, "_id_", "_title_" );
         }
 
         public void createContent() {

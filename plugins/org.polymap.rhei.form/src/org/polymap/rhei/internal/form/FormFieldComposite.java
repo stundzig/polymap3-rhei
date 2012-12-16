@@ -27,7 +27,8 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
-import org.eclipse.core.runtime.ListenerList;
+import org.polymap.core.runtime.event.EventFilter;
+import org.polymap.core.runtime.event.EventManager;
 
 import org.polymap.rhei.field.FormFieldEvent;
 import org.polymap.rhei.field.IFormField;
@@ -50,6 +51,9 @@ public class FormFieldComposite
 
     private static Log log = LogFactory.getLog( FormFieldComposite.class );
 
+    /** Identifies the editor that events belong to. */
+    private Object                  editor;
+    
     private Property                prop;
     
     private IFormEditorToolkit      toolkit;
@@ -62,8 +66,6 @@ public class FormFieldComposite
     
     private IFormFieldValidator     validator;
     
-    private ListenerList            listeners = new ListenerList( ListenerList.IDENTITY );
-    
     private boolean                 isDirty = false;
     
     /** The current error, externally set or returned by the validator. */
@@ -73,9 +75,10 @@ public class FormFieldComposite
     private String                  externalErrorMsg;
     
 
-    public FormFieldComposite( IFormEditorToolkit toolkit,
+    public FormFieldComposite( Object editor, IFormEditorToolkit toolkit,
             Property prop, IFormField field,
             IFormFieldLabel labeler, IFormFieldDecorator decorator, IFormFieldValidator validator ) {
+        this.editor = editor;
         this.prop = prop;
         this.toolkit = toolkit;
         this.field = field;
@@ -148,7 +151,6 @@ public class FormFieldComposite
             decorator.dispose();
             decorator = null;
         }
-        listeners.clear();
     }
 
     public Property getProperty() {
@@ -208,11 +210,15 @@ public class FormFieldComposite
     }
 
     public void addChangeListener( IFormFieldListener l ) {
-        listeners.add( l );    
+        EventManager.instance().subscribe( l, new EventFilter<FormFieldEvent>() {
+            public boolean apply( FormFieldEvent ev ) {
+                return ev.getFormField() == field;
+            }
+        });
     }
     
     public void removeChangeListener( IFormFieldListener l ) {
-        listeners.remove( l );
+        EventManager.instance().unsubscribe( l );
     }
     
     public void fireEvent( Object source, int eventCode, Object newValue ) {
@@ -244,11 +250,11 @@ public class FormFieldComposite
                 }
             }
         }
-        // propagate
-        FormFieldEvent ev = new FormFieldEvent( source, getFieldName(), field, eventCode, null, validatedNewValue );
-        for (Object l : listeners.getListeners()) {
-            ((IFormFieldListener)l).fieldChange( ev );
-        }
+        // propagate;
+        // syncPublish() helps to avoid to much UICallbacks browser which slows
+        // down form performance
+        FormFieldEvent ev = new FormFieldEvent( editor, source, getFieldName(), field, eventCode, null, validatedNewValue );
+        EventManager.instance().syncPublish( ev );
     }
 
     public String getErrorMessage() {

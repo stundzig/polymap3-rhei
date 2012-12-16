@@ -68,10 +68,12 @@ import org.polymap.core.qi4j.event.PropertyChangeSupport;
 import org.polymap.core.runtime.Polymap;
 import org.polymap.core.runtime.event.EventFilter;
 import org.polymap.core.runtime.event.EventHandler;
+import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.workbench.PolymapWorkbench;
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
 import org.polymap.rhei.field.FormFieldEvent;
+import org.polymap.rhei.field.IFormFieldListener;
 import org.polymap.rhei.internal.form.FormEditorPageContainer;
 import org.polymap.rhei.internal.form.FormPageProviderExtension;
 
@@ -147,6 +149,8 @@ public class FormEditor
     private Action                      revertAction;
 
     private OperationSaveListener       operationSaveListener;
+
+    private IFormFieldListener          fieldListener;
     
 
     public FormEditor() {
@@ -254,6 +258,19 @@ public class FormEditor
         operationSaveListener = new OperationSaveListener();
         OperationSupport.instance().addOperationSaveListener( operationSaveListener );
 
+        // field change listener
+        EventManager.instance().subscribe( fieldListener = 
+                new IFormFieldListener() {
+                    public void fieldChange( FormFieldEvent ev ) {
+                        FormEditor.this.fieldChange( ev );
+                    }
+                },
+                new EventFilter<FormFieldEvent>() {
+                    public boolean apply( FormFieldEvent ev ) {
+                        return ev.getEditor() == FormEditor.this;
+                    }
+                });
+        
         return super.createPageContainer( parent );
     }
 
@@ -303,21 +320,9 @@ public class FormEditor
 
 
     /**
-     * Propagates the given event to all pages of the form, except the <code>srcPage</code>.
      * 
-     * @param ev
-     * @param srcPage
      */
-    public void propagateFieldChange( FormFieldEvent ev, FormEditorPageContainer srcPage ) {
-        // propagate event to other pages
-        if (ev != null) {
-            for (FormEditorPageContainer page : pages) {
-                if (page != srcPage) {
-                    page.fireEventLocally( ev );
-                }
-            }
-        }
-        
+    protected void fieldChange( FormFieldEvent ev ) {
         // update isDirty / isValid
         boolean oldIsDirty = isDirty;
         isDirty = false;
@@ -346,7 +351,9 @@ public class FormEditor
 
     
     public void dispose() {
-        // this also disposses my pages
+        EventManager.instance().unsubscribe( fieldListener );
+        
+        // this also disposes my pages
         super.dispose();
         pages.clear();
         OperationSupport.instance().removeOperationSaveListener( operationSaveListener );
@@ -471,7 +478,7 @@ public class FormEditor
             OperationSupport.instance().execute( op, false, false );
 
             // update isDirt/isValid
-            propagateFieldChange( null, null );
+            fieldChange( null );
         }
         catch (Exception e) {
             PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "Objekt konnte nicht gespeichert werden.", e );
@@ -486,7 +493,7 @@ public class FormEditor
                 page.doLoad( monitor );
             }
             // update isDirt/isValid
-            propagateFieldChange( null, null );
+            fieldChange( null );
         }
         catch (Exception e) {
             PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "Objekt konnte nicht gespeichert werden.", e );

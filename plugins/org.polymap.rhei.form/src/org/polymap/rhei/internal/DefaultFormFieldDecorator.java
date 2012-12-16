@@ -94,6 +94,9 @@ public class DefaultFormFieldDecorator
     }
 
     protected void updateUI() {
+        if (label.isDisposed()) {
+            return;
+        }
         label.setImage( null );
 //        if (focus) {
 //            label.setImage( focusImage );            

@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2011-2012, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -27,10 +26,11 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
-import org.eclipse.core.runtime.ListenerList;
-
 import org.polymap.core.runtime.Polymap;
+import org.polymap.core.runtime.event.EventFilter;
+import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.workbench.PolymapWorkbench;
+
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
 import org.polymap.rhei.field.FormFieldEvent;
@@ -67,11 +67,10 @@ public abstract class FilterEditor
     
     private boolean                         isDirty = false;
     
-    /** Listeners of type {@link IFormFieldListener}. */
-    private ListenerList                    listeners = new ListenerList( ListenerList.IDENTITY );
-
     
     public FilterEditor() {
+        // field change listener
+        addFieldListener( this );
     }
 
     
@@ -82,12 +81,12 @@ public abstract class FilterEditor
 //    protected abstract Composite createControl( Composite parent );
     
     public synchronized void dispose() {
+        removeFieldListener( this );
         for (FilterFieldComposite field : fields.values()) {
             field.dispose();
         }
         fields.clear();
         fieldValues.clear();
-        listeners.clear();
     }
 
     public boolean isDirty() {
@@ -116,12 +115,10 @@ public abstract class FilterEditor
     public Composite newFormField( Composite parent, String propName, Class propType, 
             IFormField field, IFormFieldValidator validator, String label ) {
 
-        final FilterFieldComposite fieldComposite = new FilterFieldComposite( 
+        final FilterFieldComposite fieldComposite = new FilterFieldComposite( this,
                 toolkit, propName, propType, field, 
                 new DefaultFormFieldLabeler( label ), new DefaultFormFieldDecorator(), 
                 validator != null ? validator : new NullValidator() );
-
-        fieldComposite.addChangeListener( this );
 
         fields.put( fieldComposite.getFieldName(), fieldComposite );
 
@@ -133,41 +130,18 @@ public abstract class FilterEditor
     
     public abstract void addStandardLayout( Composite composite );
     
-//    public Composite createStandardLayout( Composite parent ) {
-//        Composite result = new Composite( parent, SWT.NONE );
-//        GridData gridData = new GridData( GridData.FILL_BOTH );
-//        gridData.grabExcessHorizontalSpace = true;
-//        result.setLayoutData( gridData );
-//
-//        layoutLast = null;
-//
-//        FormLayout layout = new FormLayout();
-//        layout.marginWidth = 10;
-//        layout.marginHeight = 10;
-//        result.setLayout( layout );
-//        return result;
-//    }
-//
-//    
-//    public void addStandardLayout( Composite composite ) {
-//        FormData data = new FormData();
-//        data.left = new FormAttachment( 0, 0 );
-//        data.right = new FormAttachment( 100, 0 );
-//        if (layoutLast != null) {
-//            data.top = new FormAttachment( layoutLast, 3 );
-//        }
-//        composite.setLayoutData( data );
-//        layoutLast = composite;
-//    }
-
     
-    public void addFieldListener( IFormFieldListener listener ) {
-        listeners.add( listener );
+    public void addFieldListener( IFormFieldListener l ) {
+        EventManager.instance().subscribe( l, new EventFilter<FormFieldEvent>() {
+            public boolean apply( FormFieldEvent ev ) {
+                return ev.getEditor() == FilterEditor.this;
+            }
+        });
     }
 
     
-    public void removeFieldListener( IFormFieldListener listener ) {
-        listeners.remove( listener );
+    public void removeFieldListener( IFormFieldListener l ) {
+        EventManager.instance().unsubscribe( l );
     }
 
     
@@ -184,20 +158,6 @@ public abstract class FilterEditor
                 isValid = false;
                 break;
             }
-        }
-
-        // XXX a event scope is needed when registering for listener for field to distinguish
-        // between local event within that field or changes from other fields in the page or whole form
-
-        //                 // propagate event to all fields
-        //                 for (FormFieldComposite field : fields) {
-        //                     if (field.getFormField() != ev.getFormField()) {
-        //                         field.fireEvent( ev.getEventCode(), ev.getNewValue() );
-        //                     }
-        //                 }
-
-        for (Object l : listeners.getListeners()) {
-            ((IFormFieldListener)l).fieldChange( ev );
         }
     }
 

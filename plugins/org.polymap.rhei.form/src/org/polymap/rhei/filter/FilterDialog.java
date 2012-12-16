@@ -134,6 +134,7 @@ public class FilterDialog
 
     public void dispose() {
         if (filterEditor != null) {
+            filterEditor.removeFieldListener( this );
             filterEditor.dispose();
             filterEditor = null;
         }

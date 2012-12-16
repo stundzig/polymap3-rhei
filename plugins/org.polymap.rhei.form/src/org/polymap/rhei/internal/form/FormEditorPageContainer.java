@@ -41,10 +41,11 @@ import org.eclipse.ui.forms.IManagedForm;
 import org.eclipse.ui.forms.editor.FormPage;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 import org.polymap.core.runtime.Polymap;
+import org.polymap.core.runtime.event.EventFilter;
+import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.workbench.PolymapWorkbench;
 
 import org.polymap.rhei.RheiFormPlugin;
@@ -71,7 +72,7 @@ import org.polymap.rhei.internal.DefaultFormFieldLabeler;
  */
 public class FormEditorPageContainer
         extends FormPage
-        implements IFormEditorPageSite, IFormFieldListener {
+        implements IFormEditorPageSite {
 
     static Log log = LogFactory.getLog( FormEditorPageContainer.class );
 
@@ -83,8 +84,7 @@ public class FormEditorPageContainer
 
     private List<FormFieldComposite>    fields = new ArrayList( 32 );
 
-    /** Listeners of type {@link IFormFieldListener}. */
-    private ListenerList                listeners = new ListenerList( ListenerList.IDENTITY );
+    private volatile boolean            blockEvents;
 
 
     public FormEditorPageContainer( IFormEditorPage page, FormEditor editor, String id, String title ) {
@@ -101,45 +101,31 @@ public class FormEditorPageContainer
             field.dispose();
         }
         fields.clear();
-        listeners.clear();
     }
 
 
     public void addFieldListener( IFormFieldListener l ) {
-        listeners.add( l );
+        EventManager.instance().subscribe( l, new EventFilter<FormFieldEvent>() {
+            public boolean apply( FormFieldEvent ev ) {
+                return !blockEvents && ev.getEditor() == getEditor();
+            }
+        });
     }
 
     public void removeFieldListener( IFormFieldListener l ) {
-        listeners.remove( l );
+        EventManager.instance().unsubscribe( l );
     }
 
     /*
      * Called from page provider client code.
      */
     public void fireEvent( Object source, String fieldName, int eventCode, Object newValue ) {
-        fieldChange( new FormFieldEvent( source, fieldName, null, eventCode, null, newValue ) );
+        if (!blockEvents) {
+            FormFieldEvent ev = new FormFieldEvent( getEditor(), source, fieldName, null, eventCode, null, newValue );
+            EventManager.instance().publish( ev );
+        }
     }
 
-    /**
-     * Called from form fields via {@link IFormFieldListener}.
-     */
-    public void fieldChange( FormFieldEvent ev ) {
-        // propagate to my listeners
-        fireEventLocally( ev );
-        // propagate to other pages
-        ((FormEditor)getEditor()).propagateFieldChange( ev, this );
-    }
-
-    public void fireEventLocally( FormFieldEvent ev ) {
-        for (Object l : listeners.getListeners()) {
-            try {
-                ((IFormFieldListener)l).fieldChange( ev );
-            }
-            catch (Exception e) {
-                log.warn( "", e );
-            }
-        }        
-    }
 
     public boolean isDirty() {
         if (page instanceof IFormEditorPage2) {
@@ -203,17 +189,16 @@ public class FormEditorPageContainer
             ((IFormEditorPage2)page).doLoad( monitor );
         }
 
-        ListenerList orig = listeners;
         try {
             // do not dispatch events while loading
-            listeners = new ListenerList( ListenerList.IDENTITY );
+            blockEvents = true;
 
             for (FormFieldComposite field : fields) {
                 field.load();
             }
         }
         finally {
-            listeners = orig;
+            blockEvents = false;
         }
     }
 
@@ -292,12 +277,10 @@ public class FormEditorPageContainer
     }
 
     public Composite newFormField( Composite parent, Property prop, IFormField field, IFormFieldValidator validator, String label ) {
-        FormFieldComposite result = new FormFieldComposite( getToolkit(), prop, field,
+        FormFieldComposite result = new FormFieldComposite( getEditor(), getToolkit(), prop, field,
                 new DefaultFormFieldLabeler( label ), new DefaultFormFieldDecorator(),
                 validator != null ? validator : new NullValidator() );
         fields.add( result );
-
-        result.addChangeListener( this );
 
         return result.createComposite( parent != null ? parent : getPageBody(), SWT.NONE );
     }

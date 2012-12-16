@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2012, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.internal.filter;
 
@@ -27,7 +24,8 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
-import org.eclipse.core.runtime.ListenerList;
+import org.polymap.core.runtime.event.EventFilter;
+import org.polymap.core.runtime.event.EventManager;
 
 import org.polymap.rhei.field.FormFieldEvent;
 import org.polymap.rhei.field.IFormField;
@@ -36,6 +34,7 @@ import org.polymap.rhei.field.IFormFieldLabel;
 import org.polymap.rhei.field.IFormFieldListener;
 import org.polymap.rhei.field.IFormFieldSite;
 import org.polymap.rhei.field.IFormFieldValidator;
+import org.polymap.rhei.filter.FilterEditor;
 import org.polymap.rhei.form.IFormEditorToolkit;
 
 /**
@@ -45,13 +44,14 @@ import org.polymap.rhei.form.IFormEditorToolkit;
  * via the {@link IFormFieldSite}.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public class FilterFieldComposite
         implements IFormFieldSite {
 
     private static Log log = LogFactory.getLog( FilterFieldComposite.class );
 
+    private FilterEditor            editor;
+    
     private String                  propName;
     
     private Class                   propType;
@@ -66,8 +66,6 @@ public class FilterFieldComposite
     
     private IFormFieldValidator     validator;
     
-    private ListenerList            listeners = new ListenerList( ListenerList.IDENTITY );
-    
     private boolean                 isDirty = false;
     
     /** The current error, externally set or returned by the validator. */
@@ -79,10 +77,11 @@ public class FilterFieldComposite
     private Object                  value;
 
 
-    public FilterFieldComposite( IFormEditorToolkit toolkit,
+    public FilterFieldComposite( FilterEditor editor, IFormEditorToolkit toolkit,
             String propName, Class propType,
             IFormField field, IFormFieldLabel labeler, IFormFieldDecorator decorator,
             IFormFieldValidator validator ) {
+        this.editor = editor;
         this.propName = propName;
         this.propType = propType;
         this.toolkit = toolkit;
@@ -141,7 +140,6 @@ public class FilterFieldComposite
             decorator.dispose();
             decorator = null;
         }
-        listeners.clear();
     }
 
 
@@ -198,11 +196,15 @@ public class FilterFieldComposite
     }
 
     public void addChangeListener( IFormFieldListener l ) {
-        listeners.add( l );    
+        EventManager.instance().subscribe( l, new EventFilter<FormFieldEvent>() {
+            public boolean apply( FormFieldEvent ev ) {
+                return ev.getFormField() == field;
+            }
+        });
     }
     
     public void removeChangeListener( IFormFieldListener l ) {
-        listeners.remove( l );
+        EventManager.instance().unsubscribe( l );
     }
     
     public void fireEvent( Object source, int eventCode, Object newValue ) {
@@ -233,11 +235,11 @@ public class FilterFieldComposite
                 }
             }
         }
-        // propagate
-        FormFieldEvent ev = new FormFieldEvent( source, propName, field, eventCode, null, validatedNewValue );
-        for (Object l : listeners.getListeners()) {
-            ((IFormFieldListener)l).fieldChange( ev );
-        }
+        // propagate;
+        // syncPublish() helps to avoid to much UICallbacks browser which slows
+        // down form performance of text fields in particular
+        FormFieldEvent ev = new FormFieldEvent( editor, source, propName, field, eventCode, null, validatedNewValue );
+        EventManager.instance().syncPublish( ev );
     }
 
     public String getErrorMessage() {

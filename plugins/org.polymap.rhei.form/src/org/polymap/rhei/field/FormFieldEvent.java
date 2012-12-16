@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2012, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,23 +11,24 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.field;
 
 import java.util.EventObject;
+
+import org.polymap.rhei.filter.FilterEditor;
 
 /**
  * Default event implementation. 
  *
  * @see IFormFieldListener
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public class FormFieldEvent
         extends EventObject {
 
+    private Object      editor;
+    
     private IFormField  formField;
     
     private int         eventCode;
@@ -40,13 +40,23 @@ public class FormFieldEvent
     private String      fieldName;
     
 
-    public FormFieldEvent( Object source, String fieldName, IFormField field, int eventCode, Object oldValue, Object newValue ) {
+    public FormFieldEvent( Object editor, Object source, String fieldName, IFormField field, int eventCode, Object oldValue, Object newValue ) {
         super( source );
+        this.editor = editor;
         this.formField = field;
         this.fieldName = fieldName;
         this.eventCode = eventCode;
         this.oldValue = oldValue;
         this.newValue = newValue;
+    }
+    
+    /**
+     * The editor that this event belongs to.
+     *
+     * @return {@link org.polymap.rhei.form.FormEditor} or {@link FilterEditor}
+     */
+    public Object getEditor() {
+        return editor;
     }
     
     public String getFieldName() {
@@ -73,5 +83,5 @@ public class FormFieldEvent
         return "FormFieldEvent [source=" + source + ", eventCode=" + eventCode + ", formField=" + formField
                 + ", newValue=" + newValue + ", oldValue=" + oldValue + "]";
     }
-    
+
 }

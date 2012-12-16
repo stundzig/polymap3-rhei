@@ -21,6 +21,8 @@ import org.opengis.feature.Property;
 
 import org.eclipse.swt.widgets.Composite;
 
+import org.polymap.core.runtime.event.EventManager;
+
 import org.polymap.rhei.field.IFormField;
 import org.polymap.rhei.field.IFormFieldListener;
 import org.polymap.rhei.field.IFormFieldValidator;
@@ -67,6 +69,16 @@ public interface IFormEditorPageSite {
      */
     public Composite newFormField( Composite parent, Property prop, IFormField field, IFormFieldValidator validator );
 
+    /**
+     * Registers the given listener that is notified about changes of an {@link IFormField}.
+     * <p/>
+     * The listener is handled by the global {@link EventManager}. The caller has to make
+     * sure that there is a (strong) reference as long as the listener is active.
+     *
+     * @param listener
+     * @throws IllegalStateException If the given listener is registered already.
+     * @see EventManager#subscribe(Object, org.polymap.core.runtime.event.EventFilter...)
+     */
     public void addFieldListener( IFormFieldListener listener );
 
     public void removeFieldListener( IFormFieldListener listener );

@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2012, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.internal.form;
 
@@ -28,8 +25,10 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.NullProgressMonitor;
+
+import org.polymap.core.runtime.event.EventFilter;
+import org.polymap.core.runtime.event.EventManager;
 
 import org.polymap.rhei.field.FormFieldEvent;
 import org.polymap.rhei.field.IFormField;
@@ -48,17 +47,19 @@ import org.polymap.rhei.internal.DefaultFormFieldLabeler;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public abstract class AbstractFormEditorPageContainer
-        implements IFormEditorPageSite, IFormFieldListener {
+        implements IFormEditorPageSite {
+    
+    private Object                      editor;
     
     protected IFormEditorPage           page;
     
     private List<FormFieldComposite>    fields = new ArrayList();
+
+    private volatile boolean            blockEvents;
+
     
-    /** Listeners of type {@link IFormFieldListener}. */
-    private ListenerList                listeners = new ListenerList( ListenerList.IDENTITY );
-    
-    
-    public AbstractFormEditorPageContainer( IFormEditorPage page, String id, String title ) {
+    public AbstractFormEditorPageContainer( Object editor, IFormEditorPage page, String id, String title ) {
+        this.editor = editor;
         this.page = page;
     }
     
@@ -71,17 +72,20 @@ public abstract class AbstractFormEditorPageContainer
             field.dispose();
         }
         fields.clear();
-        listeners.clear();
     }
 
     
     public void addFieldListener( IFormFieldListener l ) {
-        listeners.add( l );    
+        EventManager.instance().subscribe( l, new EventFilter<FormFieldEvent>() {
+            public boolean apply( FormFieldEvent ev ) {
+                return !blockEvents && ev.getEditor() == editor;
+            }
+        });
     }
     
 
     public void removeFieldListener( IFormFieldListener l ) {
-        listeners.remove( l );    
+        EventManager.instance().unsubscribe( l );
     }
 
     
@@ -89,27 +93,12 @@ public abstract class AbstractFormEditorPageContainer
      * Called from page provider client code.
      */
     public void fireEvent( Object source, String fieldName, int eventCode, Object newValue ) {
-        fieldChange( new FormFieldEvent( source, fieldName, null, eventCode, null, newValue ) );
-    }
-    
-    
-    
-    public void fieldChange( FormFieldEvent ev ) {
-// XXX a event scope is needed when registering for listener for field to distinguish
-// between local event within that field or changes from other fields in the page or whole form
-        
-//        // propagate event to all fields
-//        for (FormFieldComposite field : fields) {
-//            if (field.getFormField() != ev.getFormField()) {
-//                field.fireEvent( ev.getEventCode(), ev.getNewValue() );
-//            }
-//        }
-        
-        for (Object l : listeners.getListeners()) {
-            ((IFormFieldListener)l).fieldChange( ev );
+        if (!blockEvents) {
+            FormFieldEvent ev = new FormFieldEvent( editor, source, fieldName, null, eventCode, null, newValue );
+            EventManager.instance().publish( ev );
         }
     }
-
+    
 
     public boolean isDirty() {
         if (page instanceof IFormEditorPage2) {
@@ -171,17 +160,16 @@ public abstract class AbstractFormEditorPageContainer
             ((IFormEditorPage2)page).doLoad( monitor );
         }
 
-        ListenerList orig = listeners;
         try {
             // do not dispatch events while loading
-            listeners = new ListenerList( ListenerList.IDENTITY );
+            blockEvents = true;
 
             for (FormFieldComposite field : fields) {
                 field.load();
             }
         }
         finally {
-            listeners = orig;
+            blockEvents = false;
         }
     }
 
@@ -194,12 +182,10 @@ public abstract class AbstractFormEditorPageContainer
 
 
     public Composite newFormField( Composite parent, Property prop, IFormField field, IFormFieldValidator validator, String label ) {
-        FormFieldComposite result = new FormFieldComposite( getToolkit(), prop, field,
+        FormFieldComposite result = new FormFieldComposite( editor, getToolkit(), prop, field,
                 new DefaultFormFieldLabeler( label ), new DefaultFormFieldDecorator(), 
                 validator != null ? validator : new NullValidator() );
         fields.add( result );
-        
-        result.addChangeListener( this );
         
         return result.createComposite( parent != null ? parent : getPageBody(), SWT.NONE );
     }
