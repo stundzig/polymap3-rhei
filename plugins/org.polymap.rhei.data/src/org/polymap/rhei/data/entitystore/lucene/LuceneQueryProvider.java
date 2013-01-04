@@ -127,7 +127,7 @@ public class LuceneQueryProvider
         query.add( typeQuery, BooleanClause.Occur.MUST );
         query.add( filterQuery, BooleanClause.Occur.MUST );
 
-        log.info( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
+        log.debug( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
 
         final int firstResult = input.getStartIndex() != null ? input.getStartIndex() : 0;
         int maxFeatures = input.getMaxFeatures();
@@ -139,7 +139,7 @@ public class LuceneQueryProvider
         final IndexSearcher searcher = store.getIndexSearcher();
         TopDocs topDocs = searcher.search( query, maxResults );
         final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-        log.info( "    results: " + scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
+        log.debug( "    results: " + scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
 
 //        // get FIDs
 //        Set<String> fids = new HashSet( scoreDocs.length );

@@ -136,6 +136,9 @@ public class NumberValidator
             else if (Integer.class.isAssignableFrom( targetClass )) {
                 return Integer.valueOf( result.intValue() );
             }
+            else if (Long.class.isAssignableFrom( targetClass )) {
+                return Long.valueOf( result.longValue() );
+            }
             else {
                 throw new RuntimeException( "Unsupported target type: " + targetClass );
             }
