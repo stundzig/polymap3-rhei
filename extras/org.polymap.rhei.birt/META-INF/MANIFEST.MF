@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: BIRT Runtime/Designer Extensions
+Bundle-SymbolicName: org.polymap.rhei.birt;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: org.polymap.rhei.birt.DesignerPlugin
+Bundle-Vendor: polymap.org
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.birt;bundle-version="3.7.2",
+ org.eclipse.birt.report.viewer;bundle-version="3.7.2",
+ org.eclipse.birt.report.designer.ui;bundle-version="3.7.2",
+ org.eclipse.birt.report.designer.ui.views;bundle-version="3.7.2",
+ org.eclipse.birt.report.designer.core;bundle-version="3.7.2",
+ org.eclipse.birt.report.engine;bundle-version="3.7.2",
+ org.eclipse.birt.report.model;bundle-version="3.7.2",
+ org.eclipse.birt.data;bundle-version="3.7.2",
+ org.eclipse.birt.report.designer.ui.data;bundle-version="3.7.2",
+ org.eclipse.datatools.connectivity.oda.profile;bundle-version="3.2.7",
+ org.eclipse.datatools.connectivity.oda.design;bundle-version="3.3.4",
+ org.eclipse.datatools.enablement.oda.ws;bundle-version="1.2.3",
+ org.eclipse.datatools.connectivity.oda.design.ui;bundle-version="3.2.6"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
