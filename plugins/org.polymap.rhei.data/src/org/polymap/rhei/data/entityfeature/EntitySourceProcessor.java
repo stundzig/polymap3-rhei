@@ -180,6 +180,11 @@ public class EntitySourceProcessor
                     }
                 }
                 schema = builder.buildFeatureType();
+                
+                // EntityProvider3
+                if (entityProvider instanceof EntityProvider3) {
+                    ((EntityProvider3)entityProvider).buildFeatureType( schema );
+                }
             }
         }
         catch (IOException e) {
@@ -365,6 +370,9 @@ public class EntitySourceProcessor
         if (entityProvider instanceof EntityProvider2) {
             query = ((EntityProvider2)entityProvider).transformQuery( query );
         }
+        if (entityProvider instanceof EntityProvider3) {
+            query = ((EntityProvider3)entityProvider).transformQuery( query );
+        }
         // try OGC -> native query (Lucene)
         if (entityProvider.getQueryProvider() != null) {
             return entityProvider.getQueryProvider().convert( query, schema, entityProvider.getEntityType() );
@@ -378,9 +386,11 @@ public class EntitySourceProcessor
 
     
     private Feature buildFeature( Entity entity ) {
+        // EntityProvider2
         if (entityProvider instanceof EntityProvider2) {
             return ((EntityProvider2)entityProvider).buildFeature( entity, schema );
         }
+        // build standard feature
         else {
             EntityType type = entityProvider.getEntityType();
 
@@ -395,7 +405,14 @@ public class EntitySourceProcessor
                     EntityType.Property entityProp = type.getProperty( attr.getName().getLocalPart() );
                     fb.set( attr.getName(), entityProp.getValue( entity ) );
                 }
-                return fb.buildFeature( entity.id() );
+                Feature feature = fb.buildFeature( entity.id() );
+                
+                // EntityProvider3
+                if (entityProvider instanceof EntityProvider3) {
+                    feature = ((EntityProvider3)entityProvider).buildFeature( entity, feature, schema );
+                }
+                
+                return feature;
             }
             catch (Exception e) {
                 throw new RuntimeException( e );
@@ -493,6 +510,12 @@ public class EntitySourceProcessor
                     log.debug( "    modifying: prop=" + propName + ", value=" + value[i] + ", entity=" + entity );
                     if (entityProvider instanceof EntityProvider2) {
                         ((EntityProvider2)entityProvider).modifyFeature( entity, propName, value[i] );
+                    }
+                    else if (entityProvider instanceof EntityProvider3) {
+                        boolean applied = ((EntityProvider3)entityProvider).modifyFeature( entity, propName, value[i] );
+                        if (!applied) {
+                            entityType.getProperty( propName ).setValue( entity, value[i] );                            
+                        }
                     }
                     else {
                         entityType.getProperty( propName ).setValue( entity, value[i] );

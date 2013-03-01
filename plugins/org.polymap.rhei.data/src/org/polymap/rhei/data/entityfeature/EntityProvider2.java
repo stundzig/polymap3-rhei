@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, Falko Bräutigam, and individual contributors as
- * indicated by the @authors tag.
+ * Copyright 2011-2013, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.data.entityfeature;
 
@@ -28,8 +25,8 @@ import org.polymap.core.model.Entity;
  * {@link FeatureType} to be used and it builds the actual {@link Feature}
  * instances that are used to represent the entities.
  * 
- * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
- * @version ($Revision$)
+ * @see EntityProvider3
+ * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public interface EntityProvider2<T extends Entity>
         extends EntityProvider<T> {
