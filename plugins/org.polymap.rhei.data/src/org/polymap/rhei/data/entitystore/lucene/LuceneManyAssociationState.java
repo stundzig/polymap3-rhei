@@ -132,9 +132,7 @@ public class LuceneManyAssociationState
 
             public EntityReference next() {
                 try {
-                    EntityReference ref = new EntityReference( references.getString( index ) );
-                    index++;
-                    return ref;
+                    return new EntityReference( references.getString( index++ ) );
                 }
                 catch (JSONException e) {
                     throw new NoSuchElementException();
