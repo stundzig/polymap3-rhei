@@ -173,18 +173,21 @@ public class LuceneEntityState
 
 
     public EntityReference getAssociation( QualifiedName stateName ) {
-        String stringValue = record.get( PREFIX_ASSOC + stateName.name() );
-        return stringValue != null
-                ? EntityReference.parseEntityReference( stringValue )
-                : null;
+        String id = record.get( PREFIX_ASSOC + stateName.name() );
+        return id != null ? EntityReference.parseEntityReference( id ) : null;
     }
 
 
     public void setAssociation( QualifiedName stateName, EntityReference newEntity ) {
-        String stringValue = newEntity == null ? null : newEntity.identity();
+        String id = newEntity == null ? null : newEntity.identity();
         String fieldName = PREFIX_ASSOC + stateName.name();
 
-        record.put( fieldName, stringValue );
+        if (id != null) {
+            record.put( fieldName, id );
+        }
+        else {
+            record.remove( fieldName );
+        }
 
         markUpdated();
     }
