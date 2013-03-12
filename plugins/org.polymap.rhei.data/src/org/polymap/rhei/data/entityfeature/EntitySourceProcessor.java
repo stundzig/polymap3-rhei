@@ -162,7 +162,13 @@ public class EntitySourceProcessor
                 for (EntityType.Property prop : p) {
                     Class propType = prop.getType();
 
-                    if (Geometry.class.isAssignableFrom( propType )) {
+                    if (prop instanceof EntityType.Association) {
+                        log.debug( "    skipping association: " + prop.getName() + " / " + propType );                        
+                    }
+                    else if (prop instanceof EntityType.ManyAssociation) {
+                        log.debug( "    skipping many-association: " + prop.getName() + " / " + propType );
+                    }
+                    else if (Geometry.class.isAssignableFrom( propType )) {
                         CoordinateReferenceSystem crs = entityProvider.getCoordinateReferenceSystem( prop.getName() );
                         builder.add( prop.getName(), propType, crs );
                         builder.setDefaultGeometry( prop.getName() );
