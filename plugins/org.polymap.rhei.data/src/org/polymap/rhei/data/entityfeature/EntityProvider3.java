@@ -33,7 +33,7 @@ public interface EntityProvider3<T extends Entity>
 
     public FeatureType buildFeatureType( FeatureType schema );
     
-    public Feature buildFeature( Entity entity, Feature feature, FeatureType schema );
+    public Feature buildFeature( T entity, Feature feature, FeatureType schema );
 
     
     /**
@@ -46,7 +46,7 @@ public interface EntityProvider3<T extends Entity>
      *         returnes.
      * @throws Exception
      */
-    public boolean modifyFeature( Entity entity, String propName, Object value )
+    public boolean modifyFeature( T entity, String propName, Object value )
     throws Exception;
 
     public Query transformQuery( Query query );
