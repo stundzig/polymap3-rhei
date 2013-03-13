@@ -18,6 +18,7 @@ import java.util.Arrays;
 
 import java.io.IOException;
 
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.document.Document;
@@ -41,8 +42,14 @@ import com.google.common.base.Function;
 import static com.google.common.collect.Iterables.transform;
 
 import org.polymap.core.runtime.Timer;
+import org.polymap.core.runtime.recordstore.RecordQuery;
+import org.polymap.core.runtime.recordstore.ResultSet;
+import org.polymap.core.runtime.recordstore.lucene.GeometryValueCoder;
+import org.polymap.core.runtime.recordstore.lucene.LuceneRecordQuery;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordState;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordStore;
+
+import org.polymap.rhei.data.entityfeature.GetBoundsQuery;
 
 /**
  * This query service relies on the store directly, which is Lucene. 
@@ -82,6 +89,12 @@ public interface LuceneEntityStoreQueryService
             try {
                 Timer timer = new Timer();
                 log.debug( "findEntities(): resultType=" + resultType + ", where=" + whereClause + ", maxResults=" + maxResults );
+                
+                // getBounds
+                if (whereClause instanceof GetBoundsQuery) {
+                    return getBounds( resultType, (GetBoundsQuery)whereClause );
+                }
+                
                 if (firstResult != null && firstResult.intValue() != 0) {
                     throw new UnsupportedOperationException( "Not implemented yet: firstResult != 0" );
                 }
@@ -189,6 +202,59 @@ public interface LuceneEntityStoreQueryService
                 throw new EntityFinderException( e );
             }
         }
+        
+        
+        protected Iterable<EntityReference> getBounds( String resultType, GetBoundsQuery query )
+        throws EntityFinderException {
+            Timer timer = new Timer();
+            String typeName = resultType;
+            String geomName = query.getGeomName();
+
+            LuceneRecordStore store = entityStoreService.getStore();
+            queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
+            
+            // type/name query
+            Query luceneQuery = queryParser.createQuery( resultType, null, null );
+            LuceneRecordQuery rsQuery = new LuceneRecordQuery( store, luceneQuery );
+            rsQuery.setMaxResults( 1 );
+
+            try {
+                // MinX
+                String fieldName = geomName+GeometryValueCoder.FIELD_MINX;
+                rsQuery.sort( fieldName, RecordQuery.ASC, Double.class );
+                ResultSet resultSet = store.find( rsQuery );
+                if (resultSet.count() == 0) {
+                    return ListUtils.EMPTY_LIST;
+                }
+                EntityReference minX = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
+
+                // MaxX
+                fieldName = geomName+GeometryValueCoder.FIELD_MAXX;
+                rsQuery.sort( fieldName, RecordQuery.DESC, Double.class );
+                resultSet = store.find( rsQuery );
+                EntityReference maxX = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
+
+                // MinY
+                fieldName = geomName+GeometryValueCoder.FIELD_MINY;
+                rsQuery.sort( fieldName, RecordQuery.ASC, Double.class );
+                resultSet = store.find( rsQuery );
+                EntityReference minY = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
+
+                // MaxX
+                fieldName = geomName+GeometryValueCoder.FIELD_MAXY;
+                rsQuery.sort( fieldName, RecordQuery.DESC, Double.class );
+                resultSet = store.find( rsQuery );
+                EntityReference maxY = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
+
+                log.info( "Bounds: ... (" + timer.elapsedTime() + "ms)" );
+                
+                return Arrays.asList( minX, maxX, minY, maxY );
+            }
+            catch (Exception e) {
+                throw new EntityFinderException( e );
+            }        
+        }
+        
     }
 
 }

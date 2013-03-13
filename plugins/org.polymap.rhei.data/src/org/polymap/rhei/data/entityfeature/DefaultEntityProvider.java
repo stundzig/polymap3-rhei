@@ -18,9 +18,11 @@
 package org.polymap.rhei.data.entityfeature;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.geotools.filter.identity.FeatureIdImpl;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.identity.FeatureId;
 
@@ -29,6 +31,8 @@ import org.apache.commons.logging.LogFactory;
 
 import org.qi4j.api.query.Query;
 import org.qi4j.api.query.grammar.BooleanExpression;
+
+import com.vividsolutions.jts.geom.Geometry;
 
 import org.polymap.core.model.Entity;
 import org.polymap.core.model.EntityType;
@@ -137,6 +141,36 @@ public abstract class DefaultEntityProvider<T extends Entity>
 
     public T findEntity( String id ) {
         return repo.findEntity( type.getType(), id );
+    }
+
+    
+    @Override
+    public ReferencedEnvelope getBounds() {
+        assert getDefaultGeometry() != null : "no getDefaultGeometry() -> no bounds";
+        org.qi4j.api.query.Query<T> result = repo.findEntities( type.getType(), new GetBoundsQuery( getDefaultGeometry() ), 0, 10 );
+        Iterator<T> it = result.iterator();
+        
+        if (!it.hasNext()) {
+            return new ReferencedEnvelope( getCoordinateReferenceSystem( null ) );
+        }
+        try {
+            Geometry geom = (Geometry)type.getProperty( getDefaultGeometry() ).getValue( it.next() );
+            double minX = geom.getEnvelopeInternal().getMinX();
+
+            geom = (Geometry)type.getProperty( getDefaultGeometry() ).getValue( it.next() );
+            double maxX = geom.getEnvelopeInternal().getMaxX();
+
+            geom = (Geometry)type.getProperty( getDefaultGeometry() ).getValue( it.next() );
+            double minY = geom.getEnvelopeInternal().getMinY();
+
+            geom = (Geometry)type.getProperty( getDefaultGeometry() ).getValue( it.next() );
+            double maxY = geom.getEnvelopeInternal().getMaxY();
+
+            return new ReferencedEnvelope( minX, maxX, minY, maxY, getCoordinateReferenceSystem( null ) );
+        }
+        catch (Exception e) {
+            throw new RuntimeException( e );
+        }
     }
 
 }
