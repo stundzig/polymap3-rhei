@@ -89,6 +89,9 @@ public interface LuceneEntityStoreQueryService
             try {
                 Timer timer = new Timer();
                 log.debug( "findEntities(): resultType=" + resultType + ", where=" + whereClause + ", maxResults=" + maxResults );
+
+                final LuceneRecordStore store = entityStoreService.getStore();
+                queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
                 
                 // getBounds
                 if (whereClause instanceof GetBoundsQuery) {
@@ -99,15 +102,10 @@ public interface LuceneEntityStoreQueryService
                     throw new UnsupportedOperationException( "Not implemented yet: firstResult != 0" );
                 }
 
-                if (queryParser == null) {
-                    queryParser = new LuceneQueryParserImpl( entityStoreService.getStore() );
-                }
-                
                 // build Lucene query
                 Query query = queryParser.createQuery( resultType, whereClause, orderBySegments );
 
                 // execute Lucene query
-                final LuceneRecordStore store = entityStoreService.getStore();
                 final IndexSearcher searcher = store.getIndexSearcher();
                 TopDocs topDocs = searcher.search( query, maxResults != null ? maxResults : Integer.MAX_VALUE );
                 final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
@@ -138,11 +136,10 @@ public interface LuceneEntityStoreQueryService
                 throws EntityFinderException {
             
             try {
-                if (queryParser == null) {
-                    queryParser = new LuceneQueryParserImpl( entityStoreService.getStore() );
-                }
+                LuceneRecordStore store = entityStoreService.getStore();
+                queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
                 
-                IndexSearcher searcher = entityStoreService.getStore().getIndexSearcher();
+                IndexSearcher searcher = store.getIndexSearcher();
                 Query query = queryParser.createQuery( resultType, whereClause, null );
                 TopDocs topDocs = searcher.search( query, 1 );
                 ScoreDoc[] scoreDocs = topDocs.scoreDocs;
@@ -184,9 +181,11 @@ public interface LuceneEntityStoreQueryService
             int maxResults = 10000000;
             try {
                 Timer timer = new Timer();
+                LuceneRecordStore store = entityStoreService.getStore();
+                queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
                 
                 Query query = queryParser.createQuery( resultType, whereClause, null );
-                IndexSearcher searcher = entityStoreService.getStore().getIndexSearcher();
+                IndexSearcher searcher = store.getIndexSearcher();
                 // XXX cache this result for subsequent findEntity() calls
                 TopDocs topDocs = searcher.search( query, maxResults );
                 
@@ -211,7 +210,6 @@ public interface LuceneEntityStoreQueryService
             String geomName = query.getGeomName();
 
             LuceneRecordStore store = entityStoreService.getStore();
-            queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
             
             // type/name query
             Query luceneQuery = queryParser.createQuery( resultType, null, null );

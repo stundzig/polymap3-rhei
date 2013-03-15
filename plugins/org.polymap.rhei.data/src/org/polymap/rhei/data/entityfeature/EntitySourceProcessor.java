@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import java.io.IOException;
 
@@ -69,6 +71,7 @@ import org.polymap.core.data.pipeline.PipelineExecutor.ProcessorContext;
 import org.polymap.core.model.Entity;
 import org.polymap.core.model.EntityType;
 import org.polymap.core.project.ILayer;
+import org.polymap.core.project.IMap;
 import org.polymap.core.project.LayerUseCase;
 import org.polymap.core.qi4j.QiModule.EntityCreator;
 
@@ -263,12 +266,33 @@ public class EntitySourceProcessor
 
             if (entityQuery instanceof FidsQueryExpression) {
                 FidsQueryExpression fidsQuery = (FidsQueryExpression)entityQuery;
-                if (!fidsQuery.notQueryable().isEmpty()) {
-                    throw new RuntimeException( "Deferred filtering not implemented yet." );
+                // with post-processing
+                if (fidsQuery.hasPostProcess()) {
+                    final AtomicInteger count = new AtomicInteger();
+                    getFeatures( query, new ProcessorContext() {
+                        @Override
+                        public void sendResponse( ProcessorResponse response ) throws Exception {
+                            if (response instanceof GetFeaturesResponse) {
+                                count.addAndGet( ((GetFeaturesResponse)response).count() );
+                            }
+                        }
+                        public void sendRequest( ProcessorRequest request ) throws Exception {}
+                        public Object put( String key, Object data ) { throw new UnsupportedOperationException(); }
+                        public IService getService() { throw new UnsupportedOperationException(); }
+                        public IMap getMap() { throw new UnsupportedOperationException(); }
+                        public Set<ILayer> getLayers() { throw new UnsupportedOperationException(); }
+                        public Object get( String key ) { throw new UnsupportedOperationException(); }
+                    });
+                    return count.get();
+                }
+                // no post-processing
+                else {
+                    return fidsQuery.entitiesSize();
                 }
             }
-
-            return entityProvider.entitiesSize( entityQuery, firstResult, maxResults );
+            else {
+                return entityProvider.entitiesSize( entityQuery, firstResult, maxResults );
+            }
         }
         catch (IOException e) {
             throw e;
@@ -279,23 +303,6 @@ public class EntitySourceProcessor
         catch (Exception e) {
             throw new IOException( e );
         }
-        
-//        else {
-//            // 1 pass: query entities
-//            Iterable<Entity> entities = entityProvider.entities( null,
-//                    0, Integer.MAX_VALUE );
-//
-//            // 2 pass: filter features
-//            int count = 0;
-//            for (Entity entity : entities) {
-//                Feature feature = buildFeature( entity );
-//                if (filterFeature( feature, query.getFilter() ) != null) {
-//                    count++;
-//                }
-//            }
-//            log.debug( "            Features size: " + count );
-//            return count;
-//        }
     }
 
 
@@ -322,14 +329,10 @@ public class EntitySourceProcessor
         ArrayList<Feature> chunk = new ArrayList( DEFAULT_CHUNK_SIZE );
         for (Entity entity : entities) {
 
-            Feature feature = null;
-            // XXX synchronized because qi4j seem to have issues when loading entities
-            // from several threads
-//            synchronized (entityProvider) {
-                feature = buildFeature( entity );
-//            }
+            Feature feature = buildFeature( entity );
+            
             feature = entityQuery instanceof FidsQueryExpression
-                    ? ((FidsQueryExpression)entityQuery).deferredFilterFeature( feature )
+                    ? ((FidsQueryExpression)entityQuery).postProcess( feature )
                     : feature;
 
             if (feature != null) {

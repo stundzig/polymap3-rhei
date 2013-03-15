@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, Falko Bräutigam, and individual contributors as indicated
- * by the @authors tag.
+ * Copyright 2011-2013, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id$
  */
 package org.polymap.rhei.data.entityfeature;
 
@@ -42,8 +39,7 @@ import org.polymap.core.model.EntityType;
  * <p/>
  * Impl. note: just a skeleton, work in progress...
  * 
- * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
- * @version POLYMAP3 ($Revision$)
+ * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  * @since 3.0
  */
 class Feature2EntityFilterConverter {
@@ -97,7 +93,7 @@ class Feature2EntityFilterConverter {
         for (Identifier id : filter.getIdentifiers()) {
             fids.add( id.toString() );
         }
-        return new EntityProvider.FidsQueryExpression( fids, null );
+        return new EntityProvider.FidsQueryExpression( fids );
         
 //        Entity template = QueryExpressions.templateFor( entityType.getType() );
 //        
