@@ -43,7 +43,6 @@ import org.qi4j.api.query.grammar.ManyAssociationContainsPredicate;
 import org.qi4j.api.query.grammar.MatchesPredicate;
 import org.qi4j.api.query.grammar.Negation;
 import org.qi4j.api.query.grammar.NotEqualsPredicate;
-import org.qi4j.api.query.grammar.OrderBy;
 import org.qi4j.api.query.grammar.PropertyNullPredicate;
 import org.qi4j.api.query.grammar.PropertyReference;
 import org.qi4j.api.query.grammar.SingleValueExpression;
@@ -83,8 +82,7 @@ class LuceneQueryParserImpl {
     }
 
 
-    public Query createQuery( final String resultType, final BooleanExpression whereClause,
-            final OrderBy[] orderBySegments ) {
+    public Query createQuery( final String resultType, final BooleanExpression whereClause ) {
 
         Query filterQuery = processFilter( whereClause, resultType );
 
@@ -97,10 +95,6 @@ class LuceneQueryParserImpl {
         }
         else {
             result = typeQuery;
-        }
-
-        if (orderBySegments != null) {
-            throw new UnsupportedOperationException( "Not implemented yet: orderBySegments" );
         }
 
         log.debug( "    LUCENE query: [" + result.toString() + "]" );
@@ -322,7 +316,7 @@ class LuceneQueryParserImpl {
     /**
      * Build the field name for the Lucene query.
      */
-    protected String property2Fieldname( PropertyReference property ) {
+    public static String property2Fieldname( PropertyReference property ) {
 //        Class type = property.propertyType();
 //        Class declaringType = property.propertyDeclaringType();
 //        Method accessor = property.propertyAccessor();
