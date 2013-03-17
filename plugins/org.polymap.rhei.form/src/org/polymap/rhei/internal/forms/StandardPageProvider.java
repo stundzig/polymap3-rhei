@@ -140,7 +140,7 @@ public class StandardPageProvider
                             validator = new NumberValidator( binding, Polymap.getSessionLocale() );
                         }
                         // Boolean
-                        else if (Number.class.isAssignableFrom( binding )) {
+                        else if (Boolean.class.isAssignableFrom( binding )) {
                             formField = new CheckboxFormField();
                         }
                         // Date
