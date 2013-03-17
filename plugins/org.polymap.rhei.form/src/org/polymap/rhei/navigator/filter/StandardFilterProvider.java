@@ -142,7 +142,7 @@ public class StandardFilterProvider
                     validator = null;
                 }
                 // Date
-                else if (Number.class.isAssignableFrom( binding )) {
+                else if (Date.class.isAssignableFrom( binding )) {
                     formField = new BetweenFormField( new DateTimeFormField(), new DateTimeFormField() );
                     validator = null;
                 }
