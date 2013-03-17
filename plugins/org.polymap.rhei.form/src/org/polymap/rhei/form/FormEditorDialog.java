@@ -128,7 +128,6 @@ public class FormEditorDialog
     }
 
 
-
     /**
      *
      */
@@ -147,12 +146,15 @@ public class FormEditorDialog
             return pageBody;
         }
 
-
         public IFormEditorToolkit getToolkit() {
             return toolkit;
         }
 
         public void setFormTitle( String title ) {
+            setTitle( title );
+        }
+
+        public void setEditorTitle( String title ) {
             setTitle( title );
         }
 

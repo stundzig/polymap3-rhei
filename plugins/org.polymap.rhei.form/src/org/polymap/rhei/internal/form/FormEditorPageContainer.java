@@ -263,8 +263,13 @@ public class FormEditorPageContainer
         return toolkit;
     }
 
+    @Override
     public void setFormTitle( String title ) {
         form.getForm().setText( title );
+    }
+
+    @Override
+    public void setEditorTitle( String title ) {
         ((FormEditor)getEditor()).setPartName( title );
     }
 
