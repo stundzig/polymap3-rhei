@@ -38,11 +38,18 @@ public interface IFormEditorPageSite {
 
     /**
      * Specifies the title of this form page. The title is usually displayed
-     * in the tab of this page. So it should be human readable.
+     * in the tab of this page and in the form title.
      *
      * @param title The title of this page. Must not be null.
      */
     public void setFormTitle( String title );
+
+    /**
+     * Specifies the title of the entire editor this page is part of.
+     *
+     * @param title The title of the editor. Must not be null.
+     */
+    public void setEditorTitle( String title );
 
     public void setActivePage( String pageId );
 

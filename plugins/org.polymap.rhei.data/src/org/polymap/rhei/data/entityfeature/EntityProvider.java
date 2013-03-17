@@ -27,8 +27,6 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.identity.FeatureId;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import org.apache.commons.collections.ListUtils;
-
 import org.qi4j.api.query.grammar.BooleanExpression;
 import org.qi4j.api.query.grammar.NamedQueryExpression;
 
@@ -72,16 +70,17 @@ public interface EntityProvider<T extends Entity> {
 
         private Set<String>     fids = new HashSet();
         
-        /** Filters that cannot be translated by the {@link FidsQueryProvider}. */
-        private List<Filter>    notQueryable;
 
-
-        public FidsQueryExpression( Set<String> fids, List<Filter> notQueryable ) {
+        public FidsQueryExpression( Set<String> fids ) {
             this.fids = fids;
-            this.notQueryable = notQueryable != null ? notQueryable : ListUtils.EMPTY_LIST;
         }
 
         
+        public String name() {
+            return "FidsQueryExpression";
+        }
+
+
         public <E> Iterable<E> entities( final QiModule repo, final Class<E> type, int firstResult, int maxResults ) {
             // fids -> entities
             Iterable<E> result = Iterables.transform( fids, new Function<String,E>() {
@@ -100,7 +99,11 @@ public interface EntityProvider<T extends Entity> {
             return result;    
         }
         
-
+        
+        /**
+         * The size of the returned {@link #entities(QiModule, Class, int, int)} -
+         * without post-processing.
+         */
         public int entitiesSize() {
             return fids.size();
         }
@@ -110,22 +113,12 @@ public interface EntityProvider<T extends Entity> {
          * Called by {@link EntitySourceProcessor} after the features were build from this
          * query. This allows to filter {@link #notQueryable} filters 'by hand'.
          */
-        public Feature deferredFilterFeature( Feature feature ) {
-            for (Filter filter : notQueryable) {
-                if (!filter.evaluate( feature )) {
-                    return null;
-                }
-            }
+        public Feature postProcess( Feature feature ) {
             return feature;
         }
 
-        public String name() {
-            return "FidsQueryExpression";
-        }
-
-        /** Filters that cannot be translated by the {@link FidsQueryProvider}. */
-        public List<Filter> notQueryable() {
-            return notQueryable;
+        public boolean hasPostProcess() {
+            return false;
         }
 
         public boolean eval( Object target ) {

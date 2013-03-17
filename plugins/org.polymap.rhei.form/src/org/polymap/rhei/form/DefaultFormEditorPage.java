@@ -50,7 +50,7 @@ import org.polymap.rhei.field.StringFormField;
  * Provides some defaults to implement a form editor page.
  * <p/>
  * The <b>layout</b> is based on {@link FormLayout}. In order to get this working the
- * {@link #createFormContent(IFormEditorPageSite)} must be called from sub-classes.
+ * {@link #createFormContent(IFormEditorPageSite)} should be called from sub-classes.
  * <p/>
  * The default priority is 1, showing "above" any unspecific standard page. The priority
  * might be adjusted by overriding {@link #getPriority()}.  

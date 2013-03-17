@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.geotools.filter.visitor.DefaultFilterVisitor;
+import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.And;
 import org.opengis.filter.BinaryComparisonOperator;
@@ -50,6 +51,7 @@ import org.opengis.filter.expression.Subtract;
 import org.opengis.filter.identity.Identifier;
 import org.opengis.filter.spatial.BBOX;
 import org.opengis.filter.spatial.Beyond;
+import org.opengis.filter.spatial.BinarySpatialOperator;
 import org.opengis.filter.spatial.Contains;
 import org.opengis.filter.spatial.Crosses;
 import org.opengis.filter.spatial.DWithin;
@@ -74,6 +76,8 @@ import org.apache.lucene.search.TopDocs;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Sets;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 import org.polymap.core.data.util.Identifiers;
 import org.polymap.core.model.EntityType;
@@ -108,19 +112,19 @@ public class LuceneQueryProvider
     }
 
 
-    public FidsQueryExpression convert( org.geotools.data.Query input, FeatureType schema, EntityType entityType )
+    public FidsQueryExpression convert( final org.geotools.data.Query input, FeatureType schema, EntityType entityType )
     throws Exception {
         // FID query?
         if (input.getFilter() instanceof Id) {
             Set<Identifier> identifiers = ((Id)input.getFilter()).getIdentifiers();
             Set<String> fids = Sets.newHashSet( transform( identifiers, Identifiers.asString() ) );
-            return new FidsQueryExpression( fids, null );
+            return new FidsQueryExpression( fids );
         }
         
         Query typeQuery = new TermQuery( new Term( "type", entityType.getName() ) );
 
         // convert input query
-        Converter converter = new Converter( schema );
+        final Converter converter = new Converter( schema );
         Query filterQuery = converter.processQuery( input );
         
         BooleanQuery query = new BooleanQuery();
@@ -141,21 +145,14 @@ public class LuceneQueryProvider
         final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
         log.debug( "    results: " + scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
 
-//        // get FIDs
-//        Set<String> fids = new HashSet( scoreDocs.length );
-//        for (ScoreDoc scoreDoc : scoreDocs) {
-//            IRecordState record = store.get( scoreDoc.doc );
-//            boolean added = fids.add( (String)record.id() );
-//            if (!added) {
-//                throw new RuntimeException( "Doubled FID: " + record.id() );
-//            }
-//        }
-        
-        return new FidsQueryExpression( null, converter.notQueryable ) {
-
+        // result: FidsQueryExpression
+        return new FidsQueryExpression( null ) {
+            private Filter      filter = input.getFilter();
+            private boolean     hasProcess = !converter.postProcess.isEmpty();
+            @Override
             public <E> Iterable<E> entities( final QiModule repo, final Class<E> type, int _firstResult, int _maxResults ) {
-                
-                Iterable<E> result = transform( Arrays.asList( scoreDocs ), new Function<ScoreDoc,E>() {
+                List<ScoreDoc> scoreDocList = Arrays.asList( scoreDocs );
+                Iterable<E> result = transform( scoreDocList, new Function<ScoreDoc,E>() {
                     public E apply( ScoreDoc scoreDoc ) {
                         try {
                             IRecordState record = store.get( scoreDoc.doc );
@@ -171,9 +168,17 @@ public class LuceneQueryProvider
                 }
                 return result;
             }
-
+            @Override
             public int entitiesSize() {
                 return scoreDocs.length;
+            }
+            @Override
+            public boolean hasPostProcess() {
+                return hasProcess;
+            }
+            @Override
+            public Feature postProcess( Feature feature ) {
+                return !hasProcess || filter.evaluate( feature ) ? feature : null;
             }
         };
     }
@@ -184,10 +189,10 @@ public class LuceneQueryProvider
      */
     class Converter {
 
-        private FeatureType             schema;
+        private FeatureType         schema;
         
         /** Filters that cannot be translated by the {@link FidsQueryProvider}. */
-        private List<Filter>            notQueryable = null;
+        private List<Filter>        postProcess = new ArrayList();
 
 
         public Converter( FeatureType schema ) {
@@ -253,6 +258,10 @@ public class LuceneQueryProvider
             else if (filter instanceof BBOX) {
                 return processBBOX( (BBOX)filter );
             }
+            // BinarySpatial
+            else if (filter instanceof BinarySpatialOperator) {
+                return processBinarySpatial( (BinarySpatialOperator)filter );
+            }
             // FID
             else if (filter instanceof Id) {
                 Id fidFilter = (Id)filter;
@@ -283,18 +292,6 @@ public class LuceneQueryProvider
             else if (filter instanceof PropertyIsBetween) {
                 throw new UnsupportedOperationException( "PropertyIsBetween" );
             }
-            //        // MANY Assoc
-            //        else if (filter instanceof ManyAssociationContainsPredicate) {
-            //            throw new UnsupportedOperationException( "ManyAssociationContainsPredicate" );
-            //        }
-            //        // Assoc
-            //        else if (filter instanceof AssociationNullPredicate) {
-            //            throw new UnsupportedOperationException( "AssociationNullPredicate" );
-            //        }
-            //        // contains
-            //        else if (filter instanceof ContainsPredicate) {
-            //            return processContainsPredicate( (ContainsPredicate)filter );
-            //        }
             else {
                 throw new UnsupportedOperationException( "Unsupported filter type: " + filter.getClass() );
             }
@@ -302,13 +299,38 @@ public class LuceneQueryProvider
 
 
         @SuppressWarnings("deprecation")
-        protected Query processBBOX( BBOX bbox ) {
+        protected Query processBBOX( final BBOX bbox ) {
             String propName = bbox.getPropertyName();
             //assert !propName.equals( "" ) : "Empty propName no supported for BBOX filter.";
-            String fieldName = propName.equals( "" ) ? schema.getGeometryDescriptor().getLocalName() : propName;
+            final String fieldName = propName.equals( "" ) ? schema.getGeometryDescriptor().getLocalName() : propName;
             
             return store.getValueCoders().searchQuery( 
                     new QueryExpression.BBox( fieldName, bbox.getMinX(), bbox.getMinY(), bbox.getMaxX(), bbox.getMaxY() ) );
+        }
+
+        
+        protected org.apache.lucene.search.Query processBinarySpatial( BinarySpatialOperator filter ) {
+            PropertyName prop = (PropertyName)filter.getExpression1();
+            Literal literal = (Literal)filter.getExpression2();
+            
+            // fieldName
+            final String fieldName = prop.getPropertyName().equals( "" ) 
+                    ? schema.getGeometryDescriptor().getLocalName() 
+                    : prop.getPropertyName();
+
+            // get bounds for bbox
+            Envelope bounds = null;
+            if (literal.getValue() instanceof Geometry) {
+                bounds = ((Geometry)literal.getValue()).getEnvelopeInternal();
+            }
+            else {
+                throw new IllegalArgumentException( "Geometry type not supported: " + literal.getValue() );
+            }
+            
+            postProcess.add( filter );
+            
+            return store.getValueCoders().searchQuery( 
+                    new QueryExpression.BBox( fieldName, bounds.getMinX(), bounds.getMinY(), bounds.getMaxX(), bounds.getMaxY() ) );
         }
 
 
