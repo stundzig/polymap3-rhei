@@ -179,10 +179,20 @@ public class JsonForm
                 formField = new StringFormField();
                 validator = new NumberValidator( Integer.class, Locale.getDefault() );
             }
+            // Long
+            else if (Long.class.isAssignableFrom( valueType )) {
+                formField = new StringFormField();
+                validator = new NumberValidator( Long.class, Locale.getDefault() );
+            }
             // Float
-            else if (Integer.class.isAssignableFrom( valueType )) {
+            else if (Float.class.isAssignableFrom( valueType )) {
                 formField = new StringFormField();
                 validator = new NumberValidator( Integer.class, Locale.getDefault(), 10, 2 );
+            }
+            // Double
+            else if (Double.class.isAssignableFrom( valueType )) {
+                formField = new StringFormField();
+                validator = new NumberValidator( Double.class, Locale.getDefault(), 10, 2 );
             }
             else {
                 throw new RuntimeException( "Unhandled valueType: " + valueType );

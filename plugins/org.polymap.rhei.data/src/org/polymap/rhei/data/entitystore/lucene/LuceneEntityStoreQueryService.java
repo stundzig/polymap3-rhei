@@ -34,6 +34,8 @@ import org.qi4j.api.injection.scope.Service;
 import org.qi4j.api.mixin.Mixins;
 import org.qi4j.api.query.grammar.BooleanExpression;
 import org.qi4j.api.query.grammar.OrderBy;
+import org.qi4j.api.query.grammar.OrderBy.Order;
+import org.qi4j.api.query.grammar.PropertyReference;
 import org.qi4j.api.service.ServiceComposite;
 import org.qi4j.spi.query.EntityFinder;
 import org.qi4j.spi.query.EntityFinderException;
@@ -42,6 +44,7 @@ import com.google.common.base.Function;
 import static com.google.common.collect.Iterables.transform;
 
 import org.polymap.core.runtime.Timer;
+import org.polymap.core.runtime.recordstore.IRecordState;
 import org.polymap.core.runtime.recordstore.RecordQuery;
 import org.polymap.core.runtime.recordstore.ResultSet;
 import org.polymap.core.runtime.recordstore.lucene.GeometryValueCoder;
@@ -98,30 +101,35 @@ public interface LuceneEntityStoreQueryService
                     return getBounds( resultType, (GetBoundsQuery)whereClause );
                 }
                 
-                if (firstResult != null && firstResult.intValue() != 0) {
-                    throw new UnsupportedOperationException( "Not implemented yet: firstResult != 0" );
+                // build Lucene/Record query
+                Query luceneQuery = queryParser.createQuery( resultType, whereClause );
+
+                LuceneRecordQuery recordQuery = new LuceneRecordQuery( store, luceneQuery );
+                if (firstResult != null) {
+                    recordQuery.setFirstResult( firstResult );
                 }
-
-                // build Lucene query
-                Query query = queryParser.createQuery( resultType, whereClause, orderBySegments );
-
-                // execute Lucene query
-                final IndexSearcher searcher = store.getIndexSearcher();
-                TopDocs topDocs = searcher.search( query, maxResults != null ? maxResults : Integer.MAX_VALUE );
-                final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-                log.debug( "    results: " + scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
+                if (maxResults != null) {
+                    recordQuery.setMaxResults( maxResults );
+                }
+                if (orderBySegments != null) {
+                    if (orderBySegments.length > 1) {
+                        throw new UnsupportedOperationException( "More than 1 OrderBy is not supported yet." );
+                    }
+                    OrderBy orderBy = orderBySegments[0];
+                    PropertyReference<?> prop = orderBy.propertyReference();
+                    String propName = LuceneQueryParserImpl.property2Fieldname( prop );
+                    recordQuery.sort( propName, 
+                            orderBy.order() == Order.ASCENDING ? RecordQuery.ASC : RecordQuery.DESC,
+                            prop.propertyType() );
+                }
                 
-                return transform( Arrays.asList( scoreDocs ), new Function<ScoreDoc,EntityReference>() {
-                    public EntityReference apply( ScoreDoc input ) {
-                        try {
-                            // use record store instead of getting the document directly
-                            // to allow the cache to optimize access
-                            LuceneRecordState record = store.get( input.doc );
-                            return EntityReference.parseEntityReference( (String)record.id() );
-                        }
-                        catch (Exception e) {
-                            throw new RuntimeException( e );
-                        }
+                // execute Lucene query
+                ResultSet rs = store.find( recordQuery );
+                log.info( "    results: " + rs.count() + " (" + timer.elapsedTime() + "ms)" );
+
+                return transform( rs, new Function<IRecordState,EntityReference>() {
+                    public EntityReference apply( IRecordState input ) {
+                        return EntityReference.parseEntityReference( (String)input.id() );
                     }
                 } );
             }
@@ -140,7 +148,7 @@ public interface LuceneEntityStoreQueryService
                 queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
                 
                 IndexSearcher searcher = store.getIndexSearcher();
-                Query query = queryParser.createQuery( resultType, whereClause, null );
+                Query query = queryParser.createQuery( resultType, whereClause );
                 TopDocs topDocs = searcher.search( query, 1 );
                 ScoreDoc[] scoreDocs = topDocs.scoreDocs;
                 
@@ -184,7 +192,7 @@ public interface LuceneEntityStoreQueryService
                 LuceneRecordStore store = entityStoreService.getStore();
                 queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
                 
-                Query query = queryParser.createQuery( resultType, whereClause, null );
+                Query query = queryParser.createQuery( resultType, whereClause );
                 IndexSearcher searcher = store.getIndexSearcher();
                 // XXX cache this result for subsequent findEntity() calls
                 TopDocs topDocs = searcher.search( query, maxResults );
@@ -212,15 +220,15 @@ public interface LuceneEntityStoreQueryService
             LuceneRecordStore store = entityStoreService.getStore();
             
             // type/name query
-            Query luceneQuery = queryParser.createQuery( resultType, null, null );
-            LuceneRecordQuery rsQuery = new LuceneRecordQuery( store, luceneQuery );
-            rsQuery.setMaxResults( 1 );
+            Query luceneQuery = queryParser.createQuery( resultType, null );
+            LuceneRecordQuery recordQuery = new LuceneRecordQuery( store, luceneQuery );
+            recordQuery.setMaxResults( 1 );
 
             try {
                 // MinX
                 String fieldName = geomName+GeometryValueCoder.FIELD_MINX;
-                rsQuery.sort( fieldName, RecordQuery.ASC, Double.class );
-                ResultSet resultSet = store.find( rsQuery );
+                recordQuery.sort( fieldName, RecordQuery.ASC, Double.class );
+                ResultSet resultSet = store.find( recordQuery );
                 if (resultSet.count() == 0) {
                     return ListUtils.EMPTY_LIST;
                 }
@@ -228,20 +236,20 @@ public interface LuceneEntityStoreQueryService
 
                 // MaxX
                 fieldName = geomName+GeometryValueCoder.FIELD_MAXX;
-                rsQuery.sort( fieldName, RecordQuery.DESC, Double.class );
-                resultSet = store.find( rsQuery );
+                recordQuery.sort( fieldName, RecordQuery.DESC, Double.class );
+                resultSet = store.find( recordQuery );
                 EntityReference maxX = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
 
                 // MinY
                 fieldName = geomName+GeometryValueCoder.FIELD_MINY;
-                rsQuery.sort( fieldName, RecordQuery.ASC, Double.class );
-                resultSet = store.find( rsQuery );
+                recordQuery.sort( fieldName, RecordQuery.ASC, Double.class );
+                resultSet = store.find( recordQuery );
                 EntityReference minY = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
 
                 // MaxX
                 fieldName = geomName+GeometryValueCoder.FIELD_MAXY;
-                rsQuery.sort( fieldName, RecordQuery.DESC, Double.class );
-                resultSet = store.find( rsQuery );
+                recordQuery.sort( fieldName, RecordQuery.DESC, Double.class );
+                resultSet = store.find( recordQuery );
                 EntityReference maxY = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
 
                 log.info( "Bounds: ... (" + timer.elapsedTime() + "ms)" );

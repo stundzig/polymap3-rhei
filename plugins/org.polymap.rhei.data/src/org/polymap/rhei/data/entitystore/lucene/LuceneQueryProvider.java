@@ -14,11 +14,9 @@
  */
 package org.polymap.rhei.data.entitystore.lucene;
 
-import static com.google.common.collect.Iterables.skip;
 import static com.google.common.collect.Iterables.transform;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -49,6 +47,8 @@ import org.opengis.filter.expression.Multiply;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.expression.Subtract;
 import org.opengis.filter.identity.Identifier;
+import org.opengis.filter.sort.SortBy;
+import org.opengis.filter.sort.SortOrder;
 import org.opengis.filter.spatial.BBOX;
 import org.opengis.filter.spatial.Beyond;
 import org.opengis.filter.spatial.BinarySpatialOperator;
@@ -67,13 +67,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Sets;
 import com.vividsolutions.jts.geom.Envelope;
@@ -85,6 +81,9 @@ import org.polymap.core.qi4j.QiModule;
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.recordstore.IRecordState;
 import org.polymap.core.runtime.recordstore.QueryExpression;
+import org.polymap.core.runtime.recordstore.RecordQuery;
+import org.polymap.core.runtime.recordstore.ResultSet;
+import org.polymap.core.runtime.recordstore.lucene.LuceneRecordQuery;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordState;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordStore;
 
@@ -131,19 +130,31 @@ public class LuceneQueryProvider
         query.add( typeQuery, BooleanClause.Occur.MUST );
         query.add( filterQuery, BooleanClause.Occur.MUST );
 
-        log.debug( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
+        log.info( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
 
-        final int firstResult = input.getStartIndex() != null ? input.getStartIndex() : 0;
-        int maxFeatures = input.getMaxFeatures();
-        final int maxResults =  maxFeatures > 0 && maxFeatures < Integer.MAX_VALUE  
-                ? input.getMaxFeatures()-firstResult : 1000000;
+        // build RecordQuery
+        LuceneRecordQuery recordQuery = new LuceneRecordQuery( store, query );
+        if (input.getStartIndex() != null) {
+            recordQuery.setFirstResult( input.getStartIndex() );
+        }
+        if (input.getMaxFeatures() > 0) {
+            recordQuery.setMaxResults( input.getMaxFeatures() );
+        }
+        if (input.getSortBy() != null) {
+            if (input.getSortBy().length > 1) {
+                throw new UnsupportedOperationException( "More than 1 SortBy is not supported yet." );
+            }
+            SortBy sortBy = input.getSortBy()[0];
+            String propName = sortBy.getPropertyName().getPropertyName();
+            recordQuery.sort( propName, 
+                    sortBy.getSortOrder() == SortOrder.ASCENDING ? RecordQuery.ASC : RecordQuery.DESC,
+                    schema.getDescriptor( propName ).getType().getBinding() );
+        }
 
         // execute Lucene query
         Timer timer = new Timer();
-        final IndexSearcher searcher = store.getIndexSearcher();
-        TopDocs topDocs = searcher.search( query, maxResults );
-        final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-        log.debug( "    results: " + scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
+        final ResultSet rs = store.find( recordQuery );
+        log.info( "    non-processed results: " + rs.count() + " (" + timer.elapsedTime() + "ms)" );
 
         // result: FidsQueryExpression
         return new FidsQueryExpression( null ) {
@@ -151,26 +162,15 @@ public class LuceneQueryProvider
             private boolean     hasProcess = !converter.postProcess.isEmpty();
             @Override
             public <E> Iterable<E> entities( final QiModule repo, final Class<E> type, int _firstResult, int _maxResults ) {
-                List<ScoreDoc> scoreDocList = Arrays.asList( scoreDocs );
-                Iterable<E> result = transform( scoreDocList, new Function<ScoreDoc,E>() {
-                    public E apply( ScoreDoc scoreDoc ) {
-                        try {
-                            IRecordState record = store.get( scoreDoc.doc );
-                            return repo.findEntity( type, (String)record.id() );
-                        }
-                        catch (Exception e) {
-                            throw new RuntimeException( e );
-                        }
+                return transform( rs, new Function<IRecordState,E>() {
+                    public E apply( IRecordState record ) {
+                        return repo.findEntity( type, (String)record.id() );
                     }
                 });
-                if (firstResult > 0) {
-                    result = skip( result, firstResult );
-                }
-                return result;
             }
             @Override
             public int entitiesSize() {
-                return scoreDocs.length;
+                return rs.count();
             }
             @Override
             public boolean hasPostProcess() {
