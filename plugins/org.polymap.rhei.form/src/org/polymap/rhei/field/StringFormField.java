@@ -30,7 +30,7 @@ import org.polymap.rhei.form.IFormEditorToolkit;
 import org.polymap.rhei.internal.form.FormEditorToolkit;
 
 /**
- *
+ * A form field using a {@link Text} widget.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
