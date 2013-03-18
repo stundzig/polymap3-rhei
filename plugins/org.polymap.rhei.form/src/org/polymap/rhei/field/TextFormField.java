@@ -35,7 +35,8 @@ import org.polymap.rhei.form.IFormEditorToolkit;
 public class TextFormField
         extends StringFormField {
 
-    public TextFormField() {
+    public TextFormField( Style... styles ) {
+        super( styles );
     }
 
     public void init( IFormFieldSite _site ) {
