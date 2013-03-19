@@ -1,7 +1,6 @@
 /*
  * polymap.org
- * Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2013, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.field;
 
@@ -33,16 +30,31 @@ import org.polymap.rhei.form.IFormEditorToolkit;
 import org.polymap.rhei.internal.form.FormEditorToolkit;
 
 /**
- *
+ * A form field using a {@link Text} widget.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public class StringFormField
         implements IFormField {
 
     private static Log log = LogFactory.getLog( StringFormField.class );
 
+    /**
+     * Possible styles of a {@link StringFormField}
+     */
+    public enum Style {
+        ALIGN_LEFT      ( SWT.LEFT ),
+        ALIGN_CENTER    ( SWT.CENTER ),
+        ALIGN_RIGHT     ( SWT.RIGHT );
+        
+        public int constant = -1;
+        Style( int constant ) {
+            this.constant = constant;
+        }
+    }
+    
+    // instance *******************************************
+    
     private IFormFieldSite          site;
 
     private Text                    text;
@@ -52,6 +64,12 @@ public class StringFormField
     
     private boolean                 deferredEnabled = true;
 
+    private Style[]                 styles = new Style[] { Style.ALIGN_LEFT };
+    
+    
+    public StringFormField( Style... styles ) {
+        this.styles = styles;    
+    }
 
     public void init( IFormFieldSite _site ) {
         this.site = _site;
@@ -62,7 +80,11 @@ public class StringFormField
     }
 
     public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {
-        return createControl( parent, toolkit, SWT.NONE );
+        int swt = SWT.NONE;
+        for (Style style : styles) {
+            swt |= style.constant;
+        }
+        return createControl( parent, toolkit, swt );
     }
 
     protected Control createControl( Composite parent, IFormEditorToolkit toolkit, int style ) {

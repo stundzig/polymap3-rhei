@@ -1,7 +1,6 @@
 /*
  * polymap.org
- * Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2013, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.field;
 
@@ -30,12 +27,12 @@ import org.polymap.rhei.form.IFormEditorToolkit;
  *
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public class TextFormField
         extends StringFormField {
 
-    public TextFormField() {
+    public TextFormField( Style... styles ) {
+        super( styles );
     }
 
     public void init( IFormFieldSite _site ) {
