@@ -225,6 +225,8 @@ public abstract class DefaultFormEditorPage
         
         private String              label;
         
+        private String              tooltip;
+        
         private Feature             builderFeature;
         
         private Property            prop;
@@ -234,6 +236,8 @@ public abstract class DefaultFormEditorPage
         private IFormFieldValidator validator;
         
         private boolean             enabled = true;
+
+        private Object              layoutData;
 
         
         public FormFieldBuilder( String propName ) {
@@ -267,6 +271,11 @@ public abstract class DefaultFormEditorPage
             this.label = label;
             return this;
         }
+        
+        public FormFieldBuilder setToolTipText( String tooltip ) {
+            this.tooltip = tooltip;
+            return this;
+        }
 
         public FormFieldBuilder setField( IFormField field ) {
             this.field = field;
@@ -282,7 +291,12 @@ public abstract class DefaultFormEditorPage
             this.enabled = enabled;
             return this;
         }
-
+        
+        public FormFieldBuilder setLayoutData( Object data ) {
+            this.layoutData = data;
+            return this;
+        }
+        
         public Composite create() {
             if (parent == null) {
                 parent = pageSite.getPageBody();
@@ -314,8 +328,17 @@ public abstract class DefaultFormEditorPage
                 }
             }
             Composite result = pageSite.newFormField( parent, prop, field, validator, label );
-            applyLayout( result );
-            
+            // layoutData
+            if (layoutData != null) {
+                result.setLayoutData( layoutData );
+            }
+            else {
+                applyLayout( result );
+            }
+            // tooltip
+            if (tooltip != null) {
+                result.setToolTipText( tooltip );
+            }
             // editable
             if (!enabled) {
                 pageSite.setFieldEnabled( prop.getName().getLocalPart(), enabled );
