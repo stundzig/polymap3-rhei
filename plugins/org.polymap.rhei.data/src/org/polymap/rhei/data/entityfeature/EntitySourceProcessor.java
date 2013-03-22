@@ -227,7 +227,7 @@ public class EntitySourceProcessor
         else if (r instanceof RemoveFeaturesRequest) {
             RemoveFeaturesRequest request = (RemoveFeaturesRequest)r;
             List<FeatureId> fids = removeFeatures( request.getFilter() );
-           // fireFeatureChangeEvent( fids, FeatureChangeEvent.Type.REMOVED );
+            fireFeatureChangeEvent( fids, FeatureChangeEvent.Type.REMOVED );
             context.sendResponse( ProcessorResponse.EOP );
         }
         // ModifyFeatures
@@ -561,10 +561,12 @@ public class EntitySourceProcessor
      */
     private void fireFeatureChangeEvent( List<FeatureId> fids, FeatureChangeEvent.Type eventType ) {
         List<Feature> features = new ArrayList( fids.size() );
-        for (FeatureId fid : fids) {
-            Entity entity = entityProvider.findEntity( fid.getID() );
-            Feature feature = buildFeature( entity );
-            features.add( feature );
+        if (eventType != FeatureChangeEvent.Type.REMOVED) {
+            for (FeatureId fid : fids) {
+                Entity entity = entityProvider.findEntity( fid.getID() );
+                Feature feature = buildFeature( entity );
+                features.add( feature );
+            }
         }
         LayerEntityBufferManager buffer = LayerEntityBufferManager.forLayer( layer, entityProvider );
         buffer.fireFeatureChangeEvent( features, eventType );

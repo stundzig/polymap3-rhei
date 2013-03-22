@@ -43,6 +43,8 @@ import org.qi4j.api.unitofwork.NoSuchEntityException;
 
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 
@@ -58,6 +60,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
+import org.polymap.core.data.FeatureChangeEvent;
 import org.polymap.core.data.operations.ModifyFeaturesOperation;
 import org.polymap.core.data.operations.ZoomFeatureBoundsOperation;
 import org.polymap.core.operation.IOperationSaveListener;
@@ -76,6 +79,7 @@ import org.polymap.rhei.field.FormFieldEvent;
 import org.polymap.rhei.field.IFormFieldListener;
 import org.polymap.rhei.internal.form.FormEditorPageContainer;
 import org.polymap.rhei.internal.form.FormPageProviderExtension;
+import org.polymap.rhei.internal.form.FeatureOperationsItem;
 
 /**
  *
@@ -137,8 +141,12 @@ public class FormEditor
 
     private List<FormEditorPageContainer> pages = new ArrayList();
 
-    // FIXME visibility
-    public List<Action>                 standardPageActions = new ArrayList();
+    /**
+     * Elements of type {@link IAction} or {@link IContributionItem}.
+     * <p/>
+     * XXX visibility
+     */
+    public List                         standardPageActions = new ArrayList();
 
     private boolean                     isDirty;
 
@@ -163,9 +171,13 @@ public class FormEditor
     }
 
     protected Composite createPageContainer( Composite parent ) {
-        // zoom feature action
         final ILayer layer = ((FormEditorInput)getEditorInput()).getLayer();
+
         if (layer != null) {
+            // feature operations menu
+            standardPageActions.add( new FeatureOperationsItem( layer, getFeature(), getFeatureStore() ) );
+            
+            // zoom feature action
             Action zoomAction = new Action( Messages.get( "FormEditor_zoom" ) ) {
                 public void run() {
                     try {
@@ -188,34 +200,31 @@ public class FormEditor
             zoomAction.setEnabled( true );
             standardPageActions.add( zoomAction );
     
-            // LayerListener
-            layer.addPropertyChangeListener( this, new EventFilter<PropertyChangeEvent>() {
-                public boolean apply( PropertyChangeEvent ev ) {
-                    return PropertyChangeSupport.PROP_ENTITY_REMOVED.equals( ev.getPropertyName() );
+            // FormEditor listeners
+            EventManager.instance().subscribe( this, new EventFilter() {
+                public boolean apply( Object ev ) {
+                    // PropertyChangeEvent
+                    if (ev instanceof PropertyChangeEvent) {
+                        PropertyChangeEvent pev = (PropertyChangeEvent)ev;
+                        if (PropertyChangeSupport.PROP_ENTITY_REMOVED.equals( pev.getPropertyName() )) {
+                            try {
+                                layer.id();
+                                return false;
+                            }
+                            catch (NoSuchEntityException e) {
+                                return true;
+                            }
+                        }
+                    }
+                    // FeatureChangeEvent
+                    else if (ev instanceof FeatureChangeEvent) {
+                        FeatureChangeEvent fev = (FeatureChangeEvent)ev;
+                        return layer.equals( fev.getSource() );
+                    }
+                    return false;
                 }
             });
         }
-
-        // print/report action
-        Action reportAction = new Action( Messages.get( "FormEditor_report" ) ) {
-            public void run() {
-                try {
-//                    FeatureCollection features = FeatureCollections.newCollection();
-//                    features.add( getFeature() );
-//                    ReportOperation op = new ReportOperation( features, map, crs );
-//
-//                    OperationSupport.instance().execute( op, true, true );
-                }
-                catch (Exception e) {
-                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "", e );
-                }
-            }
-        };
-        reportAction.setImageDescriptor( ImageDescriptor.createFromURL(
-                RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/report.gif" ) ) );
-        reportAction.setToolTipText( Messages.get( "FormEditor_reportTip" ) );
-        reportAction.setEnabled( true );
-        standardPageActions.add( reportAction );
 
         // submit action
         submitAction = new Action( Messages.get( "FormEditor_submit" ) ) {
@@ -279,6 +288,19 @@ public class FormEditor
     protected void layerChanged( PropertyChangeEvent ev ) {
         IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
         page.closeEditor( FormEditor.this, false );
+    }
+
+    
+    @EventHandler(display=true)
+    protected void featureChanged( FeatureChangeEvent ev ) {
+        if (ev.getFeatures().contains( getFeature() )) {
+            // removed
+            if (ev.getType() == FeatureChangeEvent.Type.REMOVED) {
+                IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+                page.closeEditor( FormEditor.this, false );                
+            }
+            // XXX reload when modified? (check event source != this)
+        }
     }
 
 

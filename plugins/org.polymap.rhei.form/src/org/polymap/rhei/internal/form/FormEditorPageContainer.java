@@ -34,6 +34,9 @@ import org.eclipse.swt.widgets.ScrollBar;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.GroupMarker;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
 
 import org.eclipse.ui.forms.FormDialog;
@@ -244,10 +247,19 @@ public class FormEditorPageContainer
             form.getForm().getToolBarManager().appendToGroup( "__pageActions__", new Separator() );
         }
 
-        // add actions
-        form.getForm().getToolBarManager().add( new GroupMarker( "__standardPageActions__" ) );
-        for (Action action : ((FormEditor)getEditor()).standardPageActions) {
-            form.getForm().getToolBarManager().appendToGroup( "__standardPageActions__", action );
+        // add standard page actions/items
+        IToolBarManager manager = form.getForm().getToolBarManager();
+        manager.add( new GroupMarker( "__standardPageActions__" ) );
+        for (Object item : ((FormEditor)getEditor()).standardPageActions) {
+            if (item instanceof IAction) {
+                form.getForm().getToolBarManager().appendToGroup( "__standardPageActions__", (IAction)item );
+            }
+            else if (item instanceof IContributionItem) {
+                form.getForm().getToolBarManager().appendToGroup( "__standardPageActions__", (IContributionItem)item );
+            }
+            else {
+                throw new RuntimeException( "Unknown FormEditor action type: " + item.getClass() );
+            }
         }
         form.getForm().getToolBarManager().update( true );
     }
