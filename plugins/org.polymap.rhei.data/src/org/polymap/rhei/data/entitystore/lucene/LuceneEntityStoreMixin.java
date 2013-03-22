@@ -20,8 +20,6 @@ import java.io.File;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.lucene.document.Document;
-
 import org.qi4j.api.entity.EntityReference;
 import org.qi4j.api.injection.scope.This;
 import org.qi4j.api.injection.scope.Uses;
@@ -45,9 +43,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.UIJob;
-import org.polymap.core.runtime.cache.Cache;
-import org.polymap.core.runtime.cache.CacheConfig;
-import org.polymap.core.runtime.cache.CacheManager;
 import org.polymap.core.runtime.recordstore.IRecordState;
 import org.polymap.core.runtime.recordstore.IRecordStore.Updater;
 import org.polymap.core.runtime.recordstore.lucene.GeometryValueCoder;
@@ -89,9 +84,12 @@ public class LuceneEntityStoreMixin
         uuid = UUID.randomUUID().toString() + "-";
 
         store = new LuceneRecordStore( indexDir, false );
-        
-        Cache<Object,Document> documentCache = CacheManager.instance().newCache( CacheConfig.DEFAULT );
-        store.setDocumentCache( documentCache );
+
+        // entity instances are cached anyway, so caching the states would only
+        // help reducing load times, but creating an Entity instance is propably
+        // much slower than loading the record
+//        Cache<Object,Document> documentCache = CacheManager.instance().newCache( CacheConfig.DEFAULT );
+//        store.setDocumentCache( documentCache );
         
         store.getValueCoders().addValueCoder( new GeometryValueCoder() );
     }

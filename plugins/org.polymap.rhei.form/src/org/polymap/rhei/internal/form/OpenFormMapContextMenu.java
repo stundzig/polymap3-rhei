@@ -109,15 +109,20 @@ public class OpenFormMapContextMenu
         String featureLabel = feature.getIdentifier().getID();
         
         for (Property prop : feature.getProperties()) {
-            if (prop.getName().getLocalPart().equalsIgnoreCase( "name" )) {
+            String propName = prop.getName().getLocalPart();
+            
+            if (propName.equalsIgnoreCase( "name" )
+                    && prop.getValue() != null) {
                 featureLabel = prop.getValue().toString();
+                break;
             }
-            else if (prop.getName().getLocalPart().contains( "name" )
-                    || prop.getName().getLocalPart().contains( "Name" )) {
+            else if ((propName.contains( "name" ) || propName.contains( "Name" ))
+                    && prop.getValue() != null) {
                 featureLabel = prop.getValue().toString();
+                break;
             }
-            else if (prop.getName().getLocalPart().equalsIgnoreCase( "number" )
-                    || prop.getName().getLocalPart().equalsIgnoreCase( "nummer" )) {
+            else if ((propName.equalsIgnoreCase( "number" ) || propName.equalsIgnoreCase( "nummer" ))
+                    && prop.getValue() != null) {
                 featureLabel = prop.getValue().toString();
             }
         }
