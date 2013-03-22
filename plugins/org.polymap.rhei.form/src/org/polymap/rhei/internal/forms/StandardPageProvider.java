@@ -26,6 +26,7 @@ import org.opengis.feature.Property;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.PropertyDescriptor;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -94,6 +95,7 @@ public class StandardPageProvider
 
             public void createFormContent( IFormEditorPageSite site ) {
                 site.setFormTitle( feature.getIdentifier().getID() );
+                site.setEditorTitle( StringUtils.abbreviate( feature.getIdentifier().getID(), 30 ) );
                 site.getPageBody().setLayout( new FormLayout() );
   
 //                site.getToolkit().createLabel( site.getPageBody(), "Test Label" );

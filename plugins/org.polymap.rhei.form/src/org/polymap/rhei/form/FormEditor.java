@@ -43,6 +43,8 @@ import org.qi4j.api.unitofwork.NoSuchEntityException;
 
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 
@@ -76,6 +78,7 @@ import org.polymap.rhei.field.FormFieldEvent;
 import org.polymap.rhei.field.IFormFieldListener;
 import org.polymap.rhei.internal.form.FormEditorPageContainer;
 import org.polymap.rhei.internal.form.FormPageProviderExtension;
+import org.polymap.rhei.internal.form.FeatureOperationsItem;
 
 /**
  *
@@ -137,8 +140,12 @@ public class FormEditor
 
     private List<FormEditorPageContainer> pages = new ArrayList();
 
-    // FIXME visibility
-    public List<Action>                 standardPageActions = new ArrayList();
+    /**
+     * Elements of type {@link IAction} or {@link IContributionItem}.
+     * <p/>
+     * XXX visibility
+     */
+    public List                         standardPageActions = new ArrayList();
 
     private boolean                     isDirty;
 
@@ -196,27 +203,30 @@ public class FormEditor
             });
         }
 
-        // print/report action
-        Action reportAction = new Action( Messages.get( "FormEditor_report" ) ) {
-            public void run() {
-                try {
-//                    FeatureCollection features = FeatureCollections.newCollection();
-//                    features.add( getFeature() );
-//                    ReportOperation op = new ReportOperation( features, map, crs );
-//
-//                    OperationSupport.instance().execute( op, true, true );
-                }
-                catch (Exception e) {
-                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "", e );
-                }
-            }
-        };
-        reportAction.setImageDescriptor( ImageDescriptor.createFromURL(
-                RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/report.gif" ) ) );
-        reportAction.setToolTipText( Messages.get( "FormEditor_reportTip" ) );
-        reportAction.setEnabled( true );
-        standardPageActions.add( reportAction );
+//        // print/report action
+//        Action reportAction = new Action( Messages.get( "FormEditor_report" ) ) {
+//            public void run() {
+//                try {
+////                    FeatureCollection features = FeatureCollections.newCollection();
+////                    features.add( getFeature() );
+////                    ReportOperation op = new ReportOperation( features, map, crs );
+////
+////                    OperationSupport.instance().execute( op, true, true );
+//                }
+//                catch (Exception e) {
+//                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "", e );
+//                }
+//            }
+//        };
+//        reportAction.setImageDescriptor( ImageDescriptor.createFromURL(
+//                RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/report.gif" ) ) );
+//        reportAction.setToolTipText( Messages.get( "FormEditor_reportTip" ) );
+//        reportAction.setEnabled( true );
+//        standardPageActions.add( reportAction );
 
+        // feature operations menu
+        standardPageActions.add( new FeatureOperationsItem( layer, getFeature(), getFeatureStore() ) );
+        
         // submit action
         submitAction = new Action( Messages.get( "FormEditor_submit" ) ) {
             public void run() {
