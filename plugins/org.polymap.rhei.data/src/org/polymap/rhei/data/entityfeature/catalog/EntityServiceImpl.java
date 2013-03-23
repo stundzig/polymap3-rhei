@@ -114,7 +114,26 @@ public abstract class EntityServiceImpl
 //        }
 //    }
 
+    
+    public <T> T resolve( Class<T> adaptee, IProgressMonitor monitor ) throws IOException {
+        if (adaptee == null) {
+            throw new NullPointerException( "No adaptor specified" );
+        }
+//        if (adaptee.isAssignableFrom( EntityProvider.class )) {
+//            return adaptee.cast( getDS() );
+//        }
+        return super.resolve( adaptee, monitor );
+    }
+    
+    
+    public <T> boolean canResolve( Class<T> adaptee ) {
+        if (adaptee == null) {
+            return false;
+        }
+        return super.canResolve( adaptee );
+    }
 
+    
     protected IServiceInfo createInfo( IProgressMonitor monitor )
             throws IOException {
         

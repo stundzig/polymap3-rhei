@@ -451,27 +451,32 @@ public class EntitySourceProcessor
 
     protected List<FeatureId> addFeatures( Collection<Feature> features )
     throws Exception {
-        //log.debug( "            Features: " + features.size() );
-
         final EntityType type = entityProvider.getEntityType();
 
         List<FeatureId> result = new ArrayList();
         for (final Feature feature : features) {
 
             Entity entity = entityProvider.newEntity( new EntityCreator<Entity>() {
-
-                public void create( Entity instance )
-                throws Exception{
+                @Override
+                public void create( Entity instance ) throws Exception{
                     for (Property featureProp : feature.getProperties()) {
-                        EntityType.Property prop = type.getProperty( featureProp.getName().getLocalPart() );
+                        // default mapping
+                        String propName = featureProp.getName().getLocalPart();
+                        EntityType.Property prop = type.getProperty( propName );
                         Object value = featureProp.getValue();
                         // check values, do not overwrite default values
                         if (prop != null && value != null) {
                             prop.setValue( instance, value );
                         }
+                        
+                        // EntityProvider2
+                        if (entityProvider instanceof EntityProvider2) {
+                            ((EntityProvider2)entityProvider).modifyFeature( instance, propName, value );
+                        }
                     }
                 }
             });
+            
             // assuming that buildFeature() uses id() as well
             result.add( new FeatureIdImpl( entity.id() ) );
         }
