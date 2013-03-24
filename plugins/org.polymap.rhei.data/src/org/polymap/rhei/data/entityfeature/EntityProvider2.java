@@ -22,8 +22,11 @@ import org.polymap.core.model.Entity;
 
 /**
  * In addition to the {@link EntityProvider} this interface also provides the
- * {@link FeatureType} to be used and it builds the actual {@link Feature}
- * instances that are used to represent the entities.
+ * {@link FeatureType} to be used and it builds the actual {@link Feature} instances
+ * that are used to represent the entities.
+ * <p/>
+ * There is no <code>addFeatue()</code> method. Instead
+ * {@link #modifyFeature(Entity, String, Object)} is called for added features.
  * 
  * @see EntityProvider3
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
@@ -35,8 +38,19 @@ public interface EntityProvider2<T extends Entity>
     
     public Feature buildFeature( Entity entity, FeatureType schema );
 
+    /**
+     * 
+     *
+     * @param entity
+     * @param propName
+     * @param value
+     * @throws Exception
+     */
     public void modifyFeature( Entity entity, String propName, Object value )
     throws Exception;
+
+//    public void addFeature( Entity entity, Feature feature )
+//    throws Exception;
 
     public Query transformQuery( Query query );
     

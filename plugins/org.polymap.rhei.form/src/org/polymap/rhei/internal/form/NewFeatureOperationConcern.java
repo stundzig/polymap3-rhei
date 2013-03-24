@@ -36,8 +36,10 @@ import org.polymap.core.data.operations.NewFeatureOperation;
 import org.polymap.core.operation.IOperationConcernFactory;
 import org.polymap.core.operation.OperationConcernAdapter;
 import org.polymap.core.operation.OperationInfo;
+import org.polymap.core.runtime.IMessages;
 import org.polymap.core.workbench.PolymapWorkbench;
 
+import org.polymap.rhei.Messages;
 import org.polymap.rhei.form.FormEditor;
 
 
@@ -51,7 +53,9 @@ public class NewFeatureOperationConcern
 
     private static Log log = LogFactory.getLog( NewFeatureOperationConcern.class );
 
+    public static IMessages i18n = Messages.forPrefix( "NewFeatureOperationConcern" );
 
+    
     public IUndoableOperation newInstance( final IUndoableOperation op, final OperationInfo info ) {
         if (op instanceof NewFeatureOperation) {
 
@@ -65,9 +69,10 @@ public class NewFeatureOperationConcern
                     display.asyncExec( new Runnable() {
                         public void run() {
                             try {
-                                if (MessageDialog.openConfirm( 
-                                        PolymapWorkbench.getShellToParentOn(), "Neues Objekt",
-                                        "Wollen Sie das Formular zum Bearbeiten des neuen Objektes öffnen?" )) {
+                                if (MessageDialog.openQuestion( 
+                                        PolymapWorkbench.getShellToParentOn(), 
+                                        i18n.get( "dialogTitle" ),
+                                        i18n.get( "dialogMsg" ) )) {
                                     
                                     Feature feature = ((NewFeatureOperation)op).getCreatedFeature();
                                     FeatureStore fs = ((NewFeatureOperation)op).getFeatureStore();
