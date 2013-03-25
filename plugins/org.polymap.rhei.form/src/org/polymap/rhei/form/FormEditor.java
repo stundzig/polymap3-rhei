@@ -25,14 +25,15 @@ import java.util.List;
 import java.util.Map;
 
 import java.beans.PropertyChangeEvent;
+import java.io.IOException;
+
 import org.geotools.data.FeatureStore;
-import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.opengis.feature.Feature;
+import org.opengis.feature.FeatureVisitor;
 import org.opengis.feature.Property;
 import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.filter.FilterFactory;
 import org.opengis.filter.Id;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
@@ -60,6 +61,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
+import org.polymap.core.data.DataPlugin;
 import org.polymap.core.data.FeatureChangeEvent;
 import org.polymap.core.data.operations.ModifyFeaturesOperation;
 import org.polymap.core.data.operations.ZoomFeatureBoundsOperation;
@@ -292,15 +294,31 @@ public class FormEditor
 
     
     @EventHandler(display=true)
-    protected void featureChanged( FeatureChangeEvent ev ) {
-        if (ev.getFeatures().contains( getFeature() )) {
-            // removed
-            if (ev.getType() == FeatureChangeEvent.Type.REMOVED) {
+    protected void featureChanged( FeatureChangeEvent ev ) throws IOException {
+        if (ev.getType() == FeatureChangeEvent.Type.FLUSHED) {
+            if (ev.getFids().contains( getFeature().getIdentifier() )) {
+                IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+                page.closeEditor( FormEditor.this, false );
+
+                // reload feature and reset input
+                Id filter = DataPlugin.ff.id( Collections.singleton( getFeature().getIdentifier() ) );
+                final FeatureStore fs = getFeatureStore();
+
+                // reset input and reload editor
+                fs.getFeatures( filter ).accepts( new FeatureVisitor() {
+                    public void visit( Feature feature ) {
+                        open( fs, feature, null ); 
+                    }
+                }, null );
+            }
+        }
+        else if (ev.getType() == FeatureChangeEvent.Type.REMOVED) {
+            if (ev.getFids().contains( getFeature().getIdentifier() )) {
                 IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
                 page.closeEditor( FormEditor.this, false );                
             }
-            // XXX reload when modified? (check event source != this)
         }
+        // XXX reload when modified? (check event source != this)
     }
 
 
@@ -489,10 +507,10 @@ public class FormEditor
             }
 
             // execute operation
-            FilterFactory ff = CommonFactoryFinder.getFilterFactory( null );
-            Id filter = ff.id( Collections.singleton( getFeature().getIdentifier() ) );
+            Id filter = DataPlugin.ff.id( Collections.singleton( getFeature().getIdentifier() ) );
 
             ModifyFeaturesOperation op = new ModifyFeaturesOperation(
+                    ((FormEditorInput)getEditorInput()).getLayer(),
                     getFeatureStore(),
                     filter,
                     attrs.toArray( new AttributeDescriptor[attrs.size()]),
