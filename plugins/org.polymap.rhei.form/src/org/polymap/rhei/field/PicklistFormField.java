@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -74,11 +75,11 @@ public class PicklistFormField
      * Maps display value into associated return code (when selected). The TreeMap
      * sorts tha keys alphabetically.
      */
-    protected TreeMap<String,Object> values = new TreeMap();
+    private final ValueProvider values;
     
     private Object                  loadedValue;
     
-    private List<ModifyListener>    modifyListeners = new ArrayList();
+    private List<ModifyListener>    modifyListeners = new ArrayList<ModifyListener>();
 
 
     /**
@@ -100,6 +101,7 @@ public class PicklistFormField
 
     
     public PicklistFormField( int... flags ) {
+        this.values = new DefaultValueProvider();
         if (flags.length > 0) {
             setTextEditable( ArrayUtils.contains( flags, TEXT_EDITABLE ) );
             setForceTextMatch( ArrayUtils.contains( flags, FORCE_MATCH ) );
@@ -116,8 +118,8 @@ public class PicklistFormField
     public PicklistFormField( Iterable<String> values, int... flags ) {
         this( flags );
         for (String value : values) {
-            this.values.put( value, value );
-        }
+            this.values.get().put( value, value );
+        }       
     }
 
     /**
@@ -129,7 +131,7 @@ public class PicklistFormField
     public PicklistFormField( String[] values, int... flags ) {
         this( flags );
         for (String value : values) {
-            this.values.put( value, value );
+            this.values.get().put( value, value );
         }
     }
 
@@ -140,16 +142,22 @@ public class PicklistFormField
     public PicklistFormField( Map<String,? extends Object> values ) {
         setForceTextMatch( true );
         setTextEditable( false );
-
-        this.values.putAll( values );
+        this.values = new DefaultValueProvider();
+        this.values.get().putAll( values );
     }
-
+    
+    public PicklistFormField( ValueProvider valueProvider) {
+        setForceTextMatch( true );
+        setTextEditable( false );
+        this.values = valueProvider;
+    }
+    
     public PicklistFormField( ConstantWithSynonyms.Type<? extends ConstantWithSynonyms,String> constants ) {
         setForceTextMatch( true );
         setTextEditable( false );
-        
+        this.values = new DefaultValueProvider();
         for (ConstantWithSynonyms constant : constants) {
-            this.values.put( (String)constant.label, constant.id );
+            this.values.get().put( (String)constant.label, constant.id );
         }
     }
 
@@ -201,17 +209,15 @@ public class PicklistFormField
         comboStyle = !textEditable 
                 ? comboStyle | SWT.READ_ONLY
                 : comboStyle & ~SWT.READ_ONLY;
-        combo = toolkit.createCombo( parent, Collections.EMPTY_SET, comboStyle );
-        
+        combo = toolkit.createCombo( parent, Collections.EMPTY_SET, comboStyle | SWT.MULTI );
+       
         //
         for (ModifyListener l : modifyListeners) {
             combo.addModifyListener( l );
         }
         
         // add values
-        for (Map.Entry<String,Object> entry : values.entrySet()) {
-            combo.add( labelProvider.getText( entry.getKey(), entry.getValue() ) );
-        }
+        fillCombo();
         
         // modify listener
         combo.addModifyListener( new ModifyListener() {
@@ -239,13 +245,13 @@ public class PicklistFormField
                 log.debug( "widgetSelected(): selectionIndex= " + combo.getSelectionIndex() );
                 
                 int i = 0;
-                for (String label : values.keySet()) {
+                for (String label : values.get().keySet()) {
                     if (i++ == combo.getSelectionIndex()) {
                         combo.setText( label );
                         break;
                     }
                 }
-                Object value = values.get( combo.getText() );
+                Object value = values.get().get( combo.getText() );
                 site.fireEvent( PicklistFormField.this, IFormFieldListener.VALUE_CHANGE, value );
             }
             public void widgetDefaultSelected( SelectionEvent ev ) {
@@ -267,6 +273,13 @@ public class PicklistFormField
         return combo;
     }
 
+
+    private void fillCombo() {
+        for (Map.Entry<String,Object> entry : values.get().entrySet()) {
+            combo.add( labelProvider.getText( entry.getKey(), entry.getValue() ) );
+        }
+    }
+
     
     public IFormField setEnabled( boolean enabled ) {
         combo.setEnabled( enabled );
@@ -280,7 +293,7 @@ public class PicklistFormField
 
         if (forceTextMatch && value != null) {
             // find label for given value
-            for (Map.Entry<String,Object> entry : values.entrySet()) {
+            for (Map.Entry<String,Object> entry : values.get().entrySet()) {
                 if (value.equals( entry.getValue() )) {
                     combo.setText( entry.getKey() );
                     break;
@@ -303,7 +316,7 @@ public class PicklistFormField
      */
     protected Object getValue() {
         String text = combo.getText();
-        return forceTextMatch ? values.get( text ) : text; 
+        return forceTextMatch ? values.get().get( text ) : text; 
     }
     
     
@@ -325,5 +338,26 @@ public class PicklistFormField
     public void store() throws Exception {
         site.setFieldValue( getValue() );
     }
+    
+    public void reloadValues() {
+        if (combo == null) {
+            throw new IllegalStateException("createControl must be called before");
+        }
+        combo.removeAll();
+        fillCombo();
+    }
+    
+    public interface ValueProvider {
+        SortedMap<String, Object> get();
+    }
+    
+    public static class DefaultValueProvider implements ValueProvider {
 
+        private final SortedMap<String, Object> values = new TreeMap<String, Object>();
+        
+        @Override
+        public SortedMap<String, Object> get() {
+            return values;
+        }
+    }
 }
