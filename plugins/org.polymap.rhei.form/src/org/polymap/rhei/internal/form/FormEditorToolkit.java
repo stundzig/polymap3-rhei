@@ -172,7 +172,7 @@ public class FormEditorToolkit
     
     public Upload createUpload( Composite parent, int style, int flags ) {
         Upload upload = new Upload( parent, style, flags );
-//        delegate.adapt( upload, false, false );
+        delegate.adapt( upload, false, false );
         upload.setBackground( textBackground );
         upload.setData( WidgetUtil.CUSTOM_VARIANT, "formeditor" );
         return upload;

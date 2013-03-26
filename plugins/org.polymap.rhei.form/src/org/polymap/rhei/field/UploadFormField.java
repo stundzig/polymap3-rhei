@@ -12,8 +12,6 @@
  */
 package org.polymap.rhei.field;
 
-import java.util.Date;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,9 +23,12 @@ import org.apache.log4j.lf5.util.StreamUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
@@ -35,6 +36,10 @@ import org.eclipse.rwt.widgets.Upload;
 import org.eclipse.rwt.widgets.UploadEvent;
 import org.eclipse.rwt.widgets.UploadItem;
 import org.eclipse.rwt.widgets.UploadListener;
+
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.InputDialog;
+import org.eclipse.jface.dialogs.MessageDialog;
 
 import org.polymap.core.data.DataPlugin;
 import org.polymap.core.workbench.PolymapWorkbench;
@@ -60,10 +65,9 @@ public class UploadFormField
 
     private UploadedImage  uploadedValue;
 
-    /** Special value representing a "null" as the propety value. */
-    private Date           nullValue;
-
     private final File     uploadDir;
+
+    private Button         viewImageButton;
 
 
     public UploadFormField( File uploadDir ) {
@@ -83,12 +87,13 @@ public class UploadFormField
 
 
     public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {
-         Composite fileSelectionArea = toolkit.createComposite( parent, SWT.NONE );
-         FormLayout layout = new FormLayout();
-         layout.spacing = 5;
-         fileSelectionArea.setLayout( layout );
+        Composite fileSelectionArea = toolkit.createComposite( parent, SWT.NONE );
+        FormLayout layout = new FormLayout();
+        layout.spacing = 5;
+        fileSelectionArea.setLayout( layout );
 
-        upload = new Upload( fileSelectionArea, SWT.BORDER , Upload.SHOW_PROGRESS | Upload.SHOW_UPLOAD_BUTTON );
+        upload = toolkit.createUpload( fileSelectionArea, SWT.BORDER, Upload.SHOW_PROGRESS
+                | Upload.SHOW_UPLOAD_BUTTON );
         upload.setBrowseButtonText( "Browse" );
         upload.setUploadButtonText( "Upload" );
         upload.setEnabled( enabled );
@@ -96,8 +101,33 @@ public class UploadFormField
                 : FormEditorToolkit.textBackgroundDisabled );
         FormData data = new FormData();
         data.left = new FormAttachment( 0 );
-        data.right = new FormAttachment( 100 );
+        data.right = new FormAttachment( 80 );
         upload.setLayoutData( data );
+
+        viewImageButton = toolkit.createButton( fileSelectionArea, "Anzeigen", SWT.BORDER );
+        data = new FormData();
+        data.left = new FormAttachment( 80 );
+        data.right = new FormAttachment( 100 );
+        viewImageButton.setLayoutData( data );
+        enableViewButton( enabled );
+        
+        viewImageButton.addSelectionListener( new SelectionListener() {
+
+            @Override
+            public void widgetSelected( SelectionEvent e ) {
+                // open a dialog with the image preview
+                final MessageDialog dialog = new MessageDialog( PolymapWorkbench
+                        .getShellToParentOn(), uploadedValue.originalFileName(), null, "",
+                        MessageDialog.INFORMATION, new String[] { "Schlieﬂen" }, 0 );
+                dialog.setBlockOnOpen( true );
+                dialog.open();
+            }
+
+
+            @Override
+            public void widgetDefaultSelected( SelectionEvent e ) {
+            }
+        } );
 
         // uploadlistener
         upload.addUploadListener( new UploadListener() {
@@ -129,7 +159,7 @@ public class UploadFormField
                     StreamUtils.copyThenClose( item.getFileInputStream(), out );
                     log.info( "### copied to: " + dbFile );
 
-                    uploadedValue = new UploadedImageImpl( fileName, item.getFilePath(), item
+                    uploadedValue = new DefaultUploadedImage( fileName, item.getFilePath(), item
                             .getContentType(), internalFileName, dbFile.length() );
 
                 }
@@ -139,7 +169,7 @@ public class UploadFormField
                 }
 
                 site.fireEvent( UploadFormField.this, IFormFieldListener.VALUE_CHANGE,
-                        uploadedValue == null ? null : uploadedValue );
+                        uploadedValue );
             }
         } );
         // focus listener
@@ -166,20 +196,34 @@ public class UploadFormField
             upload.setEnabled( enabled );
             upload.setBackground( enabled ? FormEditorToolkit.textBackground
                     : FormEditorToolkit.textBackgroundDisabled );
+            
+            enableViewButton( enabled );
         }
         return this;
     }
 
 
+    /**
+     *
+     * @param enabled
+     */
+    private void enableViewButton( boolean enabled ) {
+        enabled = uploadedValue != null && enabled;
+        viewImageButton.setEnabled( enabled );
+        viewImageButton.setBackground( enabled ? FormEditorToolkit.textBackground
+                : FormEditorToolkit.textBackgroundDisabled );
+    }
+
+
     public IFormField setValue( Object value ) {
-        UploadedImage image = (UploadedImage)value;
+        uploadedValue = (UploadedImage)value;
 
         // TODO add decorator or label with the last uploaded file and a link to the
         // image here
+        enableViewButton( true );
 
         // the above calls does not seem to fire events
-        site.fireEvent( UploadFormField.this, IFormFieldListener.VALUE_CHANGE, image != null
-                && !image.equals( uploadedValue ) ? null : image );
+        site.fireEvent( UploadFormField.this, IFormFieldListener.VALUE_CHANGE, uploadedValue );
         return this;
     }
 
@@ -188,19 +232,8 @@ public class UploadFormField
             throws Exception {
         if (upload != null) {
 
-            if (site.getFieldValue() == null) {
-                uploadedValue = null;
-                setValue( nullValue );
-
-                // // from the source of DateTime.setDate()
-                // datetime.setDate( 9996, 0, 1 );
-                // datetime.setTime( 0, 0, 0 );
-            }
-            else if (site.getFieldValue() instanceof UploadedImage) {
+            if (site.getFieldValue() instanceof UploadedImage) {
                 uploadedValue = (UploadedImage)site.getFieldValue();
-            }
-            else {
-                log.warn( "Unknown value type: " + site.getFieldValue() );
             }
         }
     }
@@ -208,9 +241,7 @@ public class UploadFormField
 
     public void store()
             throws Exception {
-        if (uploadedValue != null) {
-            site.setFieldValue( uploadedValue );
-        }
+        site.setFieldValue( uploadedValue );
     }
 
 
@@ -232,7 +263,7 @@ public class UploadFormField
     }
 
 
-    public static class UploadedImageImpl
+    public static class DefaultUploadedImage
             implements UploadedImage {
 
         private final String fileName;
@@ -246,7 +277,7 @@ public class UploadFormField
         private final Long   fileSize;
 
 
-        public UploadedImageImpl( String fileName, String filePath, String contentType,
+        public DefaultUploadedImage( String fileName, String filePath, String contentType,
                 String internalFileName, Long fileSize ) {
             this.fileName = fileName;
             this.filePath = filePath;
@@ -283,6 +314,18 @@ public class UploadFormField
         @Override
         public String internalFileName() {
             return internalFileName;
+        }
+
+
+        @Override
+        public boolean equals( Object obj ) {
+            if (UploadedImage.class.isAssignableFrom( obj.getClass() )) {
+                String fileName = originalFileName();
+                String otherName = ((UploadedImage)obj).originalFileName();
+                return (fileName == null && otherName == null)
+                        || (fileName != null && fileName.equals( otherName ));
+            }
+            return false;
         }
     }
 }
