@@ -87,7 +87,7 @@ public class OpenFormMapContextMenu
                         for (final Feature feature : features) {
                             Action action = new Action( createLabel( feature, layer ) ) {
                                 public void run() {
-                                    FormEditor.open( fs, feature, layer );
+                                    FormEditor.open( fs, feature, layer, true );
                                 }            
                             };
                             action.setImageDescriptor( RheiFormPlugin.imageDescriptorFromPlugin(

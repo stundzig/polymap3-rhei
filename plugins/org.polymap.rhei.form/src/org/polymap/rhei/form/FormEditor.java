@@ -102,10 +102,10 @@ public class FormEditor
      * @param fs
      * @param feature
      * @param layer Hint this editor about the layer of the edited feature. Might be null.
-
+     * @param activate XXX
      * @return The editor of the given feature, or null.
      */
-    public static FormEditor open( FeatureStore fs, Feature feature, ILayer layer ) {
+    public static FormEditor open( FeatureStore fs, Feature feature, ILayer layer, boolean activate ) {
         try {
             log.debug( "open(): feature= " + feature );
             FormEditorInput input = new FormEditorInput( fs, feature );
@@ -120,14 +120,15 @@ public class FormEditor
                 }
                 if (cursor.equals( input )) {
                     Object previous = page.getActiveEditor();
-                    page.activate( reference.getPart( true ) );
+                    if (activate) {
+                        page.activate( reference.getPart( true ) );
+                    }
                     return (FormEditor)reference.getEditor( false );
                 }
             }
 
             // not found -> open new editor
-            IEditorPart part = page.openEditor( input, input.getEditorId(), true,
-                    IWorkbenchPage.MATCH_NONE );
+            IEditorPart part = page.openEditor( input, input.getEditorId(), activate, IWorkbenchPage.MATCH_NONE );
             log.debug( "editor= " + part );
             // can also be ErrorEditorPart
             return part instanceof FormEditor ? (FormEditor)part : null;
@@ -295,7 +296,10 @@ public class FormEditor
     
     @EventHandler(display=true)
     protected void featureChanged( FeatureChangeEvent ev ) throws IOException {
-        if (ev.getType() == FeatureChangeEvent.Type.FLUSHED) {
+        if (ev.getType() == FeatureChangeEvent.Type.FLUSHED
+                // XXX how to check if we are not the source of the event? 
+                /*|| ev.getType() == FeatureChangeEvent.Type.MODIFIED*/) {
+            
             if (ev.getFids().contains( getFeature().getIdentifier() )) {
                 IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
                 page.closeEditor( FormEditor.this, false );
@@ -307,7 +311,7 @@ public class FormEditor
                 // reset input and reload editor
                 fs.getFeatures( filter ).accepts( new FeatureVisitor() {
                     public void visit( Feature feature ) {
-                        open( fs, feature, null ); 
+                        open( fs, feature, null, false ); 
                     }
                 }, null );
             }

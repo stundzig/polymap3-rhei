@@ -76,7 +76,7 @@ public class NewFeatureOperationConcern
                                     
                                     Feature feature = ((NewFeatureOperation)op).getCreatedFeature();
                                     FeatureStore fs = ((NewFeatureOperation)op).getFeatureStore();
-                                    FormEditor.open( fs, feature, null );
+                                    FormEditor.open( fs, feature, null, true );
                                 }
                             }
                             catch (Exception e) {
