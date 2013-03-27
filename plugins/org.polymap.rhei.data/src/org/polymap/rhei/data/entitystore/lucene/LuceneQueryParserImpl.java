@@ -83,7 +83,6 @@ class LuceneQueryParserImpl {
 
 
     public Query createQuery( final String resultType, final BooleanExpression whereClause ) {
-
         Query filterQuery = processFilter( whereClause, resultType );
 
         Query typeQuery = new TermQuery( new Term( "type", resultType ) );
@@ -193,7 +192,7 @@ class LuceneQueryParserImpl {
         final ValueCoders valueCoders = store.getValueCoders();
 
         PropertyReference property = predicate.propertyReference();
-        final String baseFieldname = property2Fieldname( property );
+        final String baseFieldname = property2Fieldname( property ).toString();
         SingleValueExpression valueExpression = (SingleValueExpression)predicate.valueExpression();
 
         //
@@ -208,7 +207,7 @@ class LuceneQueryParserImpl {
             ResultSet lengthResult = store.find( query );
             IRecordState biggest = lengthResult.get( 0 );
             maxElements = biggest.get( lengthFieldname );
-            log.info( "    LUCENE: maxLength query: result: " + maxElements + " (" + timer.elapsedTime() + "ms)" );
+            log.debug( "    LUCENE: maxLength query: result: " + maxElements + " (" + timer.elapsedTime() + "ms)" );
         }
         catch (Exception e) {
             throw new RuntimeException( e );
@@ -262,7 +261,7 @@ class LuceneQueryParserImpl {
 
     protected Query processComparisonPredicate( ComparisonPredicate predicate ) {
         PropertyReference property = predicate.propertyReference();
-        String fieldname = property2Fieldname( property );
+        String fieldname = property2Fieldname( property ).toString();
 
         ValueExpression valueExpression = predicate.valueExpression();
 
@@ -316,24 +315,21 @@ class LuceneQueryParserImpl {
     /**
      * Build the field name for the Lucene query.
      */
-    public static String property2Fieldname( PropertyReference property ) {
-//        Class type = property.propertyType();
-//        Class declaringType = property.propertyDeclaringType();
-//        Method accessor = property.propertyAccessor();
-
-        String prefix = "";
+    public static StringBuilder property2Fieldname( PropertyReference property ) {
+        // recursion: property
         PropertyReference traversedProperty = property.traversedProperty();
         if (traversedProperty != null) {
-            prefix = Joiner.on( "" ).join(
-                    property2Fieldname( traversedProperty ),
-                    LuceneEntityState.SEPARATOR_PROP );
+            return property2Fieldname( traversedProperty )
+                    .append( LuceneEntityState.SEPARATOR_PROP )
+                    .append( property.propertyName() ); 
         }
+        // start: association
         AssociationReference traversedAssoc = property.traversedAssociation();
         if (traversedAssoc != null) {
-            throw new UnsupportedOperationException( "Traversed association in query. (Property:" + property.propertyName() + ")" );
+            return new StringBuilder( 128 ).append( traversedAssoc.associationName() );
         }
-
-        return Joiner.on( "" ).join( prefix, property.propertyName() );
+        // start: simple property
+        return new StringBuilder( 128 ).append( property.propertyName() );
     }
 
 }

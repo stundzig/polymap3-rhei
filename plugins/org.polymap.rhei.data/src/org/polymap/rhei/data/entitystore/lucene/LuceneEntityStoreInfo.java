@@ -13,6 +13,16 @@ public final class LuceneEntityStoreInfo
         this.dir = dir;
     }
 
+    /**
+     * Build a store wich holds index in RAM.
+     */
+    public LuceneEntityStoreInfo() {
+    }
+    
+    /**
+     * The directory of the index files, or null if index files should be stored in
+     * RAM.
+     */
     public File getDir() {
         return dir;
     }

@@ -117,7 +117,7 @@ public interface LuceneEntityStoreQueryService
                     }
                     OrderBy orderBy = orderBySegments[0];
                     PropertyReference<?> prop = orderBy.propertyReference();
-                    String propName = LuceneQueryParserImpl.property2Fieldname( prop );
+                    String propName = LuceneQueryParserImpl.property2Fieldname( prop ).toString();
                     recordQuery.sort( propName, 
                             orderBy.order() == Order.ASCENDING ? RecordQuery.ASC : RecordQuery.DESC,
                             prop.propertyType() );

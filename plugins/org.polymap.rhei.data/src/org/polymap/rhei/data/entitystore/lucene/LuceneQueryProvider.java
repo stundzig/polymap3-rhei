@@ -130,7 +130,7 @@ public class LuceneQueryProvider
         query.add( typeQuery, BooleanClause.Occur.MUST );
         query.add( filterQuery, BooleanClause.Occur.MUST );
 
-        log.info( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
+        log.debug( StringUtils.abbreviate( "LUCENE query: [" + query.toString() + "]", 256 ) );
 
         // build RecordQuery
         LuceneRecordQuery recordQuery = new LuceneRecordQuery( store, query );
@@ -140,7 +140,7 @@ public class LuceneQueryProvider
         if (input.getMaxFeatures() > 0) {
             recordQuery.setMaxResults( input.getMaxFeatures() );
         }
-        if (input.getSortBy() != null) {
+        if (input.getSortBy() != null && input.getSortBy().length > 0) {
             if (input.getSortBy().length > 1) {
                 throw new UnsupportedOperationException( "More than 1 SortBy is not supported yet." );
             }
@@ -154,7 +154,7 @@ public class LuceneQueryProvider
         // execute Lucene query
         Timer timer = new Timer();
         final ResultSet rs = store.find( recordQuery );
-        log.info( "    non-processed results: " + rs.count() + " (" + timer.elapsedTime() + "ms)" );
+        log.debug( "    non-processed results: " + rs.count() + " (" + timer.elapsedTime() + "ms)" );
 
         // result: FidsQueryExpression
         return new FidsQueryExpression( null ) {

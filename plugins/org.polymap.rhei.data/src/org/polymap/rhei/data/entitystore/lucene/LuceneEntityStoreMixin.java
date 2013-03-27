@@ -80,10 +80,16 @@ public class LuceneEntityStoreMixin
     public void activate()
     throws Exception {
         File indexDir = getApplicationRoot();
-        log.debug( "Lucene store: " + indexDir.getAbsolutePath() );
+        if (indexDir != null) {
+            log.debug( "Lucene store: " + indexDir.getAbsolutePath() );
+            store = new LuceneRecordStore( indexDir, false );
+        }
+        else {
+            log.debug( "Lucene store: RAM" );
+            store = new LuceneRecordStore();            
+        }
         uuid = UUID.randomUUID().toString() + "-";
 
-        store = new LuceneRecordStore( indexDir, false );
 
         // entity instances are cached anyway, so caching the states would only
         // help reducing load times, but creating an Entity instance is propably

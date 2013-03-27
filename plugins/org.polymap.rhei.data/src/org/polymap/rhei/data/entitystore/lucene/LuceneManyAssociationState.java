@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, Polymap GmbH. All rights reserved.
+ * Copyright 2011-2013, Polymap GmbH. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -23,6 +23,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import org.qi4j.api.common.QualifiedName;
 import org.qi4j.api.entity.EntityReference;
 import org.qi4j.spi.entity.ManyAssociationState;
 import org.qi4j.spi.entitystore.EntityStoreException;
@@ -30,7 +32,7 @@ import org.qi4j.spi.entitystore.EntityStoreException;
 /**
  * 
  *
- * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
+ * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class LuceneManyAssociationState
         implements ManyAssociationState, Serializable {
@@ -44,10 +46,23 @@ public class LuceneManyAssociationState
     private String              fieldName;
 
 
-    public LuceneManyAssociationState( LuceneEntityState entityState, String fieldName, JSONArray references ) {
-        this.entityState = entityState;
-        this.references = references;
-        this.fieldName = fieldName;
+    public LuceneManyAssociationState( LuceneEntityState entityState, QualifiedName stateName ) {
+        try {
+            this.entityState = entityState;
+            fieldName = LuceneEntityState.PREFIX_MANYASSOC + stateName.name();
+            
+            String json = entityState.record.get( fieldName );
+            references = json != null ? new JSONArray( json ) : new JSONArray();
+        }
+        catch (JSONException e) {
+            throw new EntityStoreException( e );
+        }
+    }
+
+    
+    void store() {
+        entityState.record.put( fieldName, references.toString() );
+        entityState.markUpdated();
     }
 
 
@@ -84,7 +99,7 @@ public class LuceneManyAssociationState
 
             // _p3: insert() is not available
             references.put( idx, entityReference.identity() );
-            entityState.setManyAssociation( this, references );
+            store();
             return true;
         }
         catch (JSONException e) {
@@ -98,7 +113,7 @@ public class LuceneManyAssociationState
             for (int i = 0; i < references.length(); i++) {
                 if (references.get( i ).equals( entityReference.identity() )) {
                     references.remove( i );
-                    entityState.setManyAssociation( this, references );
+                    store();
                     return true;
                 }
             }
@@ -112,7 +127,7 @@ public class LuceneManyAssociationState
 
     public EntityReference get( int i ) {
         try {
-            return new EntityReference( references.getString( i ) );
+            return EntityReference.parseEntityReference( references.getString( i ) );
         }
         catch (JSONException e) {
             throw new EntityStoreException( e );
@@ -120,16 +135,14 @@ public class LuceneManyAssociationState
     }
 
 
-    public Iterator<EntityReference> iterator() {
-        
+    public Iterator<EntityReference> iterator() {        
         return new Iterator<EntityReference>() {
-
             int index = 0;
-
+            @Override
             public boolean hasNext() {
                 return index < references.length();
             }
-
+            @Override
             public EntityReference next() {
                 try {
                     return new EntityReference( references.getString( index++ ) );
@@ -138,7 +151,7 @@ public class LuceneManyAssociationState
                     throw new NoSuchElementException();
                 }
             }
-
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException( "Use ManyAssociation.remove() instead." );
             }

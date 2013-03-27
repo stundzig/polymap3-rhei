@@ -1,6 +1,6 @@
 /*
  * polymap.org 
- * Copyright 2011, Polymap GmbH. All rights reserved.
+ * Copyright 2011-2013, Polymap GmbH. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,6 @@
  */
 package org.polymap.rhei.data.entitystore.lucene;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -23,9 +22,6 @@ import java.util.Map;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-
-import org.json.JSONArray;
-import org.json.JSONException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,7 +41,6 @@ import org.qi4j.spi.entity.EntityState;
 import org.qi4j.spi.entity.EntityStatus;
 import org.qi4j.spi.entity.EntityType;
 import org.qi4j.spi.entity.ManyAssociationState;
-import org.qi4j.spi.entitystore.EntityStoreException;
 import org.qi4j.spi.property.PropertyDescriptor;
 import org.qi4j.spi.property.PropertyType;
 import org.qi4j.spi.property.PropertyTypeDescriptor;
@@ -58,12 +53,12 @@ import org.polymap.core.runtime.recordstore.IRecordState;
 /**
  *
  *
- * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
+ * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class LuceneEntityState
         implements EntityState, Serializable {
 
-    private static final Log log = LogFactory.getLog( LuceneEntityState.class );
+    static final Log log = LogFactory.getLog( LuceneEntityState.class );
 
     static final String                     PREFIX_PROP = "";
     static final String                     PREFIX_ASSOC = "";
@@ -194,22 +189,14 @@ public class LuceneEntityState
 
 
     public ManyAssociationState getManyAssociation( QualifiedName stateName ) {
-        try {
-            String fieldName = PREFIX_MANYASSOC + stateName.name();
-            String stringValue = record.get( fieldName );
-            JSONArray jsonValue = stringValue != null ? new JSONArray( stringValue ) : new JSONArray();
-            return new LuceneManyAssociationState( this, fieldName, jsonValue );
-        }
-        catch (JSONException e) {
-            throw new EntityStoreException( e );
-        }
+        return new LuceneManyAssociationState( this, stateName );
     }
 
     
-    void setManyAssociation( LuceneManyAssociationState assoc, JSONArray references ) {
-        record.put( assoc.getFieldName(), references.toString() );
-        markUpdated();
-    }
+//    void setManyAssociation( LuceneManyAssociationState assoc, JSONArray references ) {
+//        record.put( assoc.getFieldName(), references.toString() );
+//        markUpdated();
+//    }
     
     
     public void remove() {
@@ -404,134 +391,6 @@ public class LuceneEntityState
 
         lastModified = System.currentTimeMillis();
         record.put( "modified", String.valueOf( lastModified ) );
-    }
-
-    
-    /**
-     * 
-     * <p/>
-     * XXX don't store the entire collection on every add()/remove()
-     */
-    static class ValueCollection
-            extends ArrayList {
-        
-        private LuceneEntityState   state;
-        
-        private String              fieldName;
-        
-        private ValueType           propertyType;
-        
-        
-        ValueCollection( LuceneEntityState state, String fieldName, ValueType propertyType ) {
-            this.state = state;
-            this.fieldName = fieldName;    
-            this.propertyType = propertyType;
-
-            Integer size = state.record.get( fieldName + "__length");
-            if (size != null) {
-                ValueType collectedType = ((CollectionType)propertyType).collectedType();
-
-                for (int i=0; i<size; i++) {
-                    Object elm = state.loadProperty( Joiner.on( "" ).join( 
-                            fieldName, "[", i, "]" ), collectedType );
-                    add( elm );
-                }
-            }
-        }
-        
-        
-        ValueCollection( LuceneEntityState state, String fieldName, ValueType propertyType, Collection value ) {
-            this.state = state;
-            this.fieldName = fieldName;    
-            this.propertyType = propertyType;
-            
-            super.addAll( value );
-        }
-        
-        
-        void store() {
-            ValueType collectedType = ((CollectionType)propertyType).collectedType();
-            int count = 0;
-            for (Object collectedValue : this) {
-                state.storeProperty( Joiner.on( "" ).join( 
-                        fieldName, "[", count++, "]" ), collectedType, collectedValue );
-            }
-            // ignore removed entries, just update the length field
-            state.record.put( fieldName + "__length", count );
-            
-            state.markUpdated();
-        }
-        
-        
-        public boolean add( Object object ) {
-            log.debug( "add(): object=" + object );
-            if (super.add( object )) {
-                store();
-                return true;
-            }
-            return false;
-        }
-
-
-        public void add( int index, Object object ) {
-            log.debug( "add(): index=" + index + ", object=" + object );
-            super.add( index, object );
-            store();
-        }
-
-
-        public boolean addAll( int index, Collection coll ) {
-            if (super.addAll( index, coll )) {
-                store();
-                return true;
-            }
-            return false;
-        }
-        
-        
-        public Object remove( int index ) {
-            log.debug( "remove(): index=" + index );
-            Object result = super.remove( index );
-            store();
-            return result;
-        }
-        
-        
-        public boolean remove( Object o ) {
-            log.debug( "remove(): o=" + o );
-            boolean result = super.remove( o );
-            store();
-            return result;
-        }
-
-
-        public Object set( int index, Object object ) {
-            log.debug( "set(): index=" + index + ", object=" + object );
-            Object result = super.set( index, object );
-            store();
-            return result;
-        }
-
-
-        public boolean addAll( Collection c ) {
-            throw new RuntimeException( "not yet implemented." );
-        }
-
-
-        public void clear() {
-            throw new RuntimeException( "not yet implemented." );
-        }
-
-
-        public boolean removeAll( Collection c ) {
-            throw new RuntimeException( "not yet implemented." );
-        }
-
-
-        public boolean retainAll( Collection c ) {
-            throw new RuntimeException( "not yet implemented." );
-        }
-        
     }
     
 }
