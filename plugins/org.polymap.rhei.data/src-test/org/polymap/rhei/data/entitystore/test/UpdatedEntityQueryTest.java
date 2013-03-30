@@ -14,10 +14,7 @@
  */
 package org.polymap.rhei.data.entitystore.test;
 
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,8 +23,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.qi4j.api.common.Optional;
 import org.qi4j.api.entity.EntityComposite;
-import org.qi4j.api.entity.association.Association;
-import org.qi4j.api.entity.association.ManyAssociation;
 import org.qi4j.api.property.Property;
 import org.qi4j.api.query.Query;
 import org.qi4j.api.query.QueryBuilder;
@@ -46,13 +41,11 @@ import org.qi4j.spi.structure.ApplicationSPI;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class AssociationTest {
+public class UpdatedEntityQueryTest {
 
-    private static Log log = LogFactory.getLog( AssociationTest.class );
+    private static Log log = LogFactory.getLog( UpdatedEntityQueryTest.class );
     
     private static RepositoryAssembler assembler;
-
-    private static Company theCompany;
 
     private static Person thePaul;
 
@@ -61,7 +54,7 @@ public class AssociationTest {
     public static void setUpBeforeClass() throws Exception {
         System.setProperty( "org.apache.commons.logging.simplelog.log.org.polymap.rhei.data", "debug" );
 
-        assembler = new RepositoryAssembler( Person.class, Company.class );
+        assembler = new RepositoryAssembler( Person.class );
         Energy4Java qi4j = new Energy4Java();
 
         ApplicationSPI application = qi4j.newApplication( new ApplicationAssembler() {
@@ -78,71 +71,88 @@ public class AssociationTest {
         // create entities
         UnitOfWork uow = assembler.uowf.newUnitOfWork();
         
-        theCompany = uow.newEntity( Company.class );
-        theCompany.name().set( "theCompany" );
-        
         thePaul = uow.newEntity( Person.class );
         thePaul.name().set( "paul" );
-        theCompany.chief().set( thePaul );
-        theCompany.employees().add( thePaul );
+        thePaul.age().set( 24 );
         uow.complete();
     }
 
 
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-    }
-
-
-    @Before
-    public void setUp() throws Exception {
-    }
-
-
-    @After
-    public void tearDown() throws Exception {
-    }
-
-
-    @Test
-    public void simpleAccess() throws Exception {
-        UnitOfWork uow = assembler.uowf.newUnitOfWork();
-        Company company = uow.get( theCompany );        
-        Assert.assertEquals( "paul", company.chief().get().name().get() );
-        
-        Assert.assertEquals( 1, company.employees().count() );
-        Assert.assertEquals( "paul", company.employees().get( 0 ).name().get() );
-    }
-
-    
-    @Test
-    public void associationQuery() throws Exception {
-        UnitOfWork uow = assembler.uowf.newUnitOfWork();
+    protected Query<Person> doQuery( UnitOfWork uow ) throws Exception {
         QueryBuilderFactory factory = assembler.module.queryBuilderFactory();
 
-        // paul -> found
         Person paul = uow.get( thePaul );        
-        Company template = QueryExpressions.templateFor( Company.class );
-        QueryBuilder<Company> builder = factory.newQueryBuilder( Company.class )
-                .where( QueryExpressions.eq( template.chief(), paul ) );
-        Query<Company> query = builder.newQuery( uow );
-        
-        Assert.assertEquals( 1, query.count() );
-        Company company = query.find();
-        Assert.assertEquals( "theCompany", company.name().get() );
-
-        // anyPerson -> not found
-        Person anyPerson = uow.newEntity( Person.class );
-        anyPerson.name().set( "anyPerson" );
-
-        builder = factory.newQueryBuilder( Company.class )
-                .where( QueryExpressions.eq( template.chief(), anyPerson ) );
-        query = builder.newQuery( uow );
-        
-        Assert.assertEquals( 0, query.count() );
+        Person template = QueryExpressions.templateFor( Person.class );
+        QueryBuilder<Person> builder = factory.newQueryBuilder( Person.class )
+                .where( QueryExpressions.and(
+                        QueryExpressions.eq( template.name(), "paul" ),
+                        QueryExpressions.eq( template.age(), 24 ) ) );
+        return builder.newQuery( uow );
     }
 
     
+    protected void checkResult( Query<Person> query ) {
+        for (Person person : query) {
+            Assert.assertEquals( "paul", person.name().get() );
+            Assert.assertEquals( (Integer)24, person.age().get() );
+        }
+    }
+
+
+    @Test
+    public void test() throws Exception {
+        UnitOfWork uow = assembler.uowf.newUnitOfWork();
+
+        // without changes
+        Query<Person> query = doQuery( uow );
+        Assert.assertEquals( 1, query.count() );
+        checkResult( query );
+        
+        // add entity
+        Person person = uow.newEntity( Person.class );
+        person.name().set( "paul" );
+        person.age().set( 24 );
+        Assert.assertEquals( 2, query.count() );
+        checkResult( query );
+
+        // modify added entity
+        person.age().set( 25 );
+        Assert.assertEquals( 1, query.count() );
+        checkResult( query );
+
+        // modify stored entity
+        uow.get( thePaul ).age().set( 25 );
+        Assert.assertEquals( 0, query.count() );
+        checkResult( query );
+
+        // reset added entity
+        person.age().set( 24 );
+        Assert.assertEquals( 1, query.count() );
+        checkResult( query );
+
+        // reset stored entity
+        uow.get( thePaul ).age().set( 24 );
+        Assert.assertEquals( 2, query.count() );
+        checkResult( query );
+
+        // remove added entity
+        uow.remove( person );
+        Assert.assertEquals( 1, query.count() );
+        checkResult( query );
+        
+        // remove stored entity
+        uow.remove( uow.get( thePaul ) );
+        Assert.assertEquals( 0, query.count() );
+        checkResult( query );
+        
+        // other UoW still ok?
+        UnitOfWork uow2 = assembler.uowf.newUnitOfWork();
+        Query<Person> query2 = doQuery( uow2 );
+        Assert.assertEquals( 1, query2.count() );
+        checkResult( query2 );
+    }
+
+
     /**
      * 
      */
@@ -154,22 +164,6 @@ public class AssociationTest {
         
         @Optional
         public Property<Integer>    age();
-        
-    }
-
-    /**
-     * 
-     */
-    public static interface Company
-            extends EntityComposite {
-
-        @Optional
-        public Property<String>         name();
-        
-        @Optional
-        public Association<Person>      chief();
-        
-        public ManyAssociation<Person>  employees();
         
     }
 

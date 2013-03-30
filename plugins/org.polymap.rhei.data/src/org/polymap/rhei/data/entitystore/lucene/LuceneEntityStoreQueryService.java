@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, Polymap GmbH. All rights reserved.
+ * Copyright 2011-2013, Polymap GmbH. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -21,14 +21,13 @@ import java.io.IOException;
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 
+import org.qi4j.api.entity.EntityComposite;
 import org.qi4j.api.entity.EntityReference;
 import org.qi4j.api.injection.scope.Service;
 import org.qi4j.api.mixin.Mixins;
@@ -49,7 +48,6 @@ import org.polymap.core.runtime.recordstore.RecordQuery;
 import org.polymap.core.runtime.recordstore.ResultSet;
 import org.polymap.core.runtime.recordstore.lucene.GeometryValueCoder;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordQuery;
-import org.polymap.core.runtime.recordstore.lucene.LuceneRecordState;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordStore;
 
 import org.polymap.rhei.data.entityfeature.GetBoundsQuery;
@@ -57,7 +55,7 @@ import org.polymap.rhei.data.entityfeature.GetBoundsQuery;
 /**
  * This query service relies on the store directly, which is Lucene. 
  * 
- * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
+ * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 @Mixins({ 
         LuceneEntityStoreQueryService.LuceneEntityFinderMixin.class,
@@ -71,19 +69,17 @@ public interface LuceneEntityStoreQueryService
     public static class LuceneEntityFinderMixin
             implements EntityFinder {
 
-        private static Log log = LogFactory.getLog( LuceneQueryParserImpl.class );
+        private static Log log = LogFactory.getLog( LuceneEntityStoreQueryService.class );
 
         @Service
-        private LuceneEntityStoreService    entityStoreService;
+        private LuceneEntityStoreService    storeService;
         
-        private LuceneQueryParserImpl       queryParser;
-
         private IdentityFieldSelector       identityFieldSelector = new IdentityFieldSelector();
 
         
         public Iterable<EntityReference> findEntities( 
                 String resultType,
-                BooleanExpression whereClause, 
+                final BooleanExpression whereClause, 
                 OrderBy[] orderBySegments, 
                 Integer firstResult,
                 Integer maxResults )
@@ -93,8 +89,8 @@ public interface LuceneEntityStoreQueryService
                 Timer timer = new Timer();
                 log.debug( "findEntities(): resultType=" + resultType + ", where=" + whereClause + ", maxResults=" + maxResults );
 
-                final LuceneRecordStore store = entityStoreService.getStore();
-                queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
+                final LuceneRecordStore store = storeService.getStore();
+                LuceneQueryBuilder queryBuilder = new LuceneQueryBuilder( store );
                 
                 // getBounds
                 if (whereClause instanceof GetBoundsQuery) {
@@ -102,7 +98,7 @@ public interface LuceneEntityStoreQueryService
                 }
                 
                 // build Lucene/Record query
-                Query luceneQuery = queryParser.createQuery( resultType, whereClause );
+                Query luceneQuery = queryBuilder.createQuery( resultType, whereClause );
 
                 LuceneRecordQuery recordQuery = new LuceneRecordQuery( store, luceneQuery );
                 if (firstResult != null) {
@@ -117,7 +113,7 @@ public interface LuceneEntityStoreQueryService
                     }
                     OrderBy orderBy = orderBySegments[0];
                     PropertyReference<?> prop = orderBy.propertyReference();
-                    String propName = LuceneQueryParserImpl.property2Fieldname( prop ).toString();
+                    String propName = LuceneQueryBuilder.property2Fieldname( prop ).toString();
                     recordQuery.sort( propName, 
                             orderBy.order() == Order.ASCENDING ? RecordQuery.ASC : RecordQuery.DESC,
                             prop.propertyType() );
@@ -125,11 +121,18 @@ public interface LuceneEntityStoreQueryService
                 
                 // execute Lucene query
                 ResultSet rs = store.find( recordQuery );
-                log.info( "    results: " + rs.count() + " (" + timer.elapsedTime() + "ms)" );
+                log.debug( "    pre-processed results: " + rs.count() + " (" + timer.elapsedTime() + "ms)" );
 
+                // result
+                final boolean postProcess = !queryBuilder.getPostProcess().isEmpty();
+                
                 return transform( rs, new Function<IRecordState,EntityReference>() {
-                    public EntityReference apply( IRecordState input ) {
-                        return EntityReference.parseEntityReference( (String)input.id() );
+                    public EntityReference apply( IRecordState record ) {
+                        return new EntityFinder.PostProcessEntityReference( (String)record.id() ) {
+                            public boolean apply( EntityComposite entity ) {
+                                return postProcess ? whereClause.eval( entity ) : true;
+                            }
+                        };
                     }
                 } );
             }
@@ -142,28 +145,28 @@ public interface LuceneEntityStoreQueryService
         public EntityReference findEntity( 
                 String resultType, BooleanExpression whereClause )
                 throws EntityFinderException {
-            
-            try {
-                LuceneRecordStore store = entityStoreService.getStore();
-                queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
-                
-                IndexSearcher searcher = store.getIndexSearcher();
-                Query query = queryParser.createQuery( resultType, whereClause );
-                TopDocs topDocs = searcher.search( query, 1 );
-                ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-                
-                if (scoreDocs.length > 0) { 
-                    int docnum = scoreDocs[0].doc;
-                    Document doc = searcher.doc( docnum, identityFieldSelector );
-                    return EntityReference.parseEntityReference( doc.get( LuceneRecordState.ID_FIELD ) );
-                }
-                else {
-                    return null;
-                }
-            }
-            catch (Exception e) {
-                throw new EntityFinderException( e );
-            }
+            throw new RuntimeException( "No longer used because of the (new) EntityQuery that reflects uncommited entity updates :)" );
+//            try {
+//                LuceneRecordStore store = storeService.getStore();
+//                LuceneQueryBuilder queryBuilder = new LuceneQueryBuilder( store );
+//                
+//                IndexSearcher searcher = store.getIndexSearcher();
+//                Query query = queryBuilder.createQuery( resultType, whereClause );
+//                TopDocs topDocs = searcher.search( query, 1 );
+//                ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+//                
+//                if (scoreDocs.length > 0) { 
+//                    int docnum = scoreDocs[0].doc;
+//                    Document doc = searcher.doc( docnum, identityFieldSelector );
+//                    return EntityReference.parseEntityReference( doc.get( LuceneRecordState.ID_FIELD ) );
+//                }
+//                else {
+//                    return null;
+//                }
+//            }
+//            catch (Exception e) {
+//                throw new EntityFinderException( e );
+//            }
         }
 
         
@@ -189,10 +192,10 @@ public interface LuceneEntityStoreQueryService
             int maxResults = 10000000;
             try {
                 Timer timer = new Timer();
-                LuceneRecordStore store = entityStoreService.getStore();
-                queryParser = queryParser != null ? queryParser : new LuceneQueryParserImpl( store );
+                LuceneRecordStore store = storeService.getStore();
+                LuceneQueryBuilder queryBuilder = new LuceneQueryBuilder( store );
                 
-                Query query = queryParser.createQuery( resultType, whereClause );
+                Query query = queryBuilder.createQuery( resultType, whereClause );
                 IndexSearcher searcher = store.getIndexSearcher();
                 // XXX cache this result for subsequent findEntity() calls
                 TopDocs topDocs = searcher.search( query, maxResults );
@@ -217,10 +220,10 @@ public interface LuceneEntityStoreQueryService
             String typeName = resultType;
             String geomName = query.getGeomName();
 
-            LuceneRecordStore store = entityStoreService.getStore();
+            LuceneRecordStore store = storeService.getStore();
             
             // type/name query
-            Query luceneQuery = queryParser.createQuery( resultType, null );
+            Query luceneQuery = new LuceneQueryBuilder( store ).createQuery( resultType, null );
             LuceneRecordQuery recordQuery = new LuceneRecordQuery( store, luceneQuery );
             recordQuery.setMaxResults( 1 );
 

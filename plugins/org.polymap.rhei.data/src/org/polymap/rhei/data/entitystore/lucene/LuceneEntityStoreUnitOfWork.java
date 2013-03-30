@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, Polymap GmbH. All rights reserved.
+ * Copyright 2011-2013, Polymap GmbH. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -14,6 +14,7 @@
  */
 package org.polymap.rhei.data.entitystore.lucene;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.logging.Log;
@@ -28,6 +29,7 @@ import org.qi4j.spi.entitystore.EntityNotFoundException;
 import org.qi4j.spi.entitystore.EntityStoreException;
 import org.qi4j.spi.entitystore.EntityStoreSPI;
 import org.qi4j.spi.entitystore.EntityStoreUnitOfWork;
+import org.qi4j.spi.entitystore.EntityStoreUnitOfWork2;
 import org.qi4j.spi.entitystore.StateCommitter;
 
 import com.google.common.collect.MapMaker;
@@ -35,10 +37,10 @@ import com.google.common.collect.MapMaker;
 /**
  * This {@link EntityStoreUnitOfWork} works with {@link LuceneEntityStoreMixin}.
  * 
- * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
+ * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public final class LuceneEntityStoreUnitOfWork
-        implements EntityStoreUnitOfWork {
+        implements EntityStoreUnitOfWork, EntityStoreUnitOfWork2 {
 
     private static Log log = LogFactory.getLog( LuceneEntityStoreUnitOfWork.class );
 
@@ -91,6 +93,12 @@ public final class LuceneEntityStoreUnitOfWork
 
     public Module module() {
         return module;
+    }
+
+    
+    @Override
+    public Map<String, EntityState> modified() {
+        return modified;
     }
 
 

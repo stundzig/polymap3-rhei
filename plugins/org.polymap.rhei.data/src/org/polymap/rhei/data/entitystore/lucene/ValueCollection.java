@@ -52,7 +52,7 @@ class ValueCollection
                 Object elm = state.loadProperty( 
                         Joiner.on( "" ).join( fieldName, "[", i, "]" ), 
                         collectedType );
-                add( elm );
+                super.add( elm );
             }
         }
     }
