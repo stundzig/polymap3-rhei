@@ -38,7 +38,6 @@ import org.polymap.core.model.Entity;
 import org.polymap.core.model.EntityType;
 import org.polymap.core.qi4j.QiModule;
 import org.polymap.core.qi4j.QiModule.EntityCreator;
-import org.polymap.core.runtime.entity.IEntityStateListener;
 
 /**
  *
@@ -46,7 +45,7 @@ import org.polymap.core.runtime.entity.IEntityStateListener;
  * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
  */
 public abstract class DefaultEntityProvider<T extends Entity>
-        implements EntityProvider<T>, IEntityStateListener {
+        implements EntityProvider<T> {
 
     private static Log log = LogFactory.getLog( DefaultEntityProvider.class );
 
