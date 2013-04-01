@@ -38,6 +38,7 @@ import org.polymap.core.model.Entity;
 import org.polymap.core.model.EntityType;
 import org.polymap.core.qi4j.QiModule;
 import org.polymap.core.qi4j.QiModule.EntityCreator;
+import org.polymap.core.runtime.entity.IEntityStateListener;
 
 /**
  *
@@ -45,7 +46,7 @@ import org.polymap.core.qi4j.QiModule.EntityCreator;
  * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
  */
 public abstract class DefaultEntityProvider<T extends Entity>
-        implements EntityProvider<T> {
+        implements EntityProvider<T>, IEntityStateListener {
 
     private static Log log = LogFactory.getLog( DefaultEntityProvider.class );
 
@@ -54,7 +55,7 @@ public abstract class DefaultEntityProvider<T extends Entity>
     protected EntityType<T>         type;
 
     protected Name                  name;
-
+    
 
     public DefaultEntityProvider( QiModule repo, Class<T> entityClass, Name entityName ) {
         this.repo = repo;
@@ -135,6 +136,13 @@ public abstract class DefaultEntityProvider<T extends Entity>
         catch (Exception e) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    @Override
+    public void revert() {
+        log.warn( "FIXME FIXME FIXME - reverting ALL changes instead of a layer" );
+        repo.revertChanges();
     }
 
 }

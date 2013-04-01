@@ -300,7 +300,10 @@ public class FormEditor
                 // XXX how to check if we are not the source of the event? 
                 /*|| ev.getType() == FeatureChangeEvent.Type.MODIFIED*/) {
             
-            if (ev.getFids().contains( getFeature().getIdentifier() )) {
+            if (ev.getFids().contains( getFeature().getIdentifier() )
+                    // EntitySourceProcessor sends empty FLUSH events
+                    || ev.getFids().isEmpty() ) {
+                
                 IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
                 page.closeEditor( FormEditor.this, false );
 

@@ -91,7 +91,8 @@ public class UpdatedEntityQueryTest {
     }
 
     
-    protected void checkResult( Query<Person> query ) {
+    protected void checkResult( Query<Person> query, int expectedCount ) {
+        Assert.assertEquals( expectedCount, query.count() );
         for (Person person : query) {
             Assert.assertEquals( "paul", person.name().get() );
             Assert.assertEquals( (Integer)24, person.age().get() );
@@ -100,56 +101,104 @@ public class UpdatedEntityQueryTest {
 
 
     @Test
-    public void test() throws Exception {
+    public void applyTest() throws Exception {
+        UnitOfWork uow = assembler.uowf.newUnitOfWork();
+
+        // new entity
+        Person person = uow.newEntity( Person.class );
+        person.name().set( "paul" );
+        person.surname().set( "eindhoven" );
+        person.age().set( 24 );
+
+        // update entity
+        uow.get( thePaul ).age().set( 25 );
+        
+        // apply
+        uow.apply();
+
+        // check
+        Query<Person> query = doQuery( uow );
+        checkResult( query, 1 );
+        Assert.assertEquals( "eindhoven", query.find().surname().get() );
+        
+        // reset changes + apply
+        uow.remove( person );
+        uow.get( thePaul ).age().set( 24 );
+        uow.apply();
+
+        // check changes
+        query = doQuery( uow );
+        checkResult( query, 1 );
+        
+        uow.discard();
+    }
+    
+    
+    @Test
+    public void revertTest() throws Exception {
+        UnitOfWork uow = assembler.uowf.newUnitOfWork();
+
+        // new entity
+        Person person = uow.newEntity( Person.class );
+        person.name().set( "paul" );
+        person.surname().set( "eindhoven" );
+        person.age().set( 24 );
+        
+        // update entity
+        uow.get( thePaul ).age().set( 25 );
+        
+        uow.revert();
+        
+        // check
+        Query<Person> query = doQuery( uow );
+        checkResult( query, 1 );
+        
+        uow.discard();
+    }
+    
+    
+    @Test
+    public void preApplyTest() throws Exception {
         UnitOfWork uow = assembler.uowf.newUnitOfWork();
 
         // without changes
         Query<Person> query = doQuery( uow );
-        Assert.assertEquals( 1, query.count() );
-        checkResult( query );
+        checkResult( query, 1 );
         
         // add entity
         Person person = uow.newEntity( Person.class );
         person.name().set( "paul" );
         person.age().set( 24 );
-        Assert.assertEquals( 2, query.count() );
-        checkResult( query );
+        checkResult( query, 2 );
 
         // modify added entity
         person.age().set( 25 );
-        Assert.assertEquals( 1, query.count() );
-        checkResult( query );
+        checkResult( query, 1 );
 
         // modify stored entity
         uow.get( thePaul ).age().set( 25 );
-        Assert.assertEquals( 0, query.count() );
-        checkResult( query );
+        checkResult( query, 0 );
 
         // reset added entity
         person.age().set( 24 );
-        Assert.assertEquals( 1, query.count() );
-        checkResult( query );
+        checkResult( query, 1 );
 
         // reset stored entity
         uow.get( thePaul ).age().set( 24 );
-        Assert.assertEquals( 2, query.count() );
-        checkResult( query );
+        checkResult( query, 2 );
 
         // remove added entity
         uow.remove( person );
-        Assert.assertEquals( 1, query.count() );
-        checkResult( query );
+        checkResult( query, 1 );
         
         // remove stored entity
         uow.remove( uow.get( thePaul ) );
-        Assert.assertEquals( 0, query.count() );
-        checkResult( query );
+        checkResult( query, 0 );
         
         // other UoW still ok?
         UnitOfWork uow2 = assembler.uowf.newUnitOfWork();
         Query<Person> query2 = doQuery( uow2 );
-        Assert.assertEquals( 1, query2.count() );
-        checkResult( query2 );
+        checkResult( query2, 1 );
     }
 
 
@@ -161,6 +210,9 @@ public class UpdatedEntityQueryTest {
 
         @Optional
         public Property<String>     name();
+        
+        @Optional
+        public Property<String>     surname();
         
         @Optional
         public Property<Integer>    age();

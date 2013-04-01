@@ -16,6 +16,7 @@ package org.polymap.rhei.data.entityfeature;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -48,6 +49,8 @@ import org.qi4j.api.value.ValueComposite;
 
 import com.vividsolutions.jts.geom.Geometry;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+
 import org.polymap.core.data.FeatureChangeEvent;
 import org.polymap.core.data.feature.AddFeaturesRequest;
 import org.polymap.core.data.feature.FidSet;
@@ -60,6 +63,7 @@ import org.polymap.core.data.feature.GetFeaturesSizeResponse;
 import org.polymap.core.data.feature.ModifyFeaturesRequest;
 import org.polymap.core.data.feature.ModifyFeaturesResponse;
 import org.polymap.core.data.feature.RemoveFeaturesRequest;
+import org.polymap.core.data.feature.buffer.IFeatureBufferProcessor;
 import org.polymap.core.data.feature.buffer.LayerFeatureBufferManager;
 import org.polymap.core.data.pipeline.ITerminalPipelineProcessor;
 import org.polymap.core.data.pipeline.PipelineExecutor.ProcessorContext;
@@ -88,7 +92,7 @@ import org.polymap.rhei.data.entityfeature.catalog.EntityServiceImpl;
  * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
  */
 public class EntitySourceProcessor
-        implements ITerminalPipelineProcessor {
+        implements ITerminalPipelineProcessor, IFeatureBufferProcessor {
 
     private static final Log log = LogFactory.getLog( EntitySourceProcessor.class );
 
@@ -136,6 +140,9 @@ public class EntitySourceProcessor
     private EntityQueryBuilder      filterConverter;
 
     private ILayer                  layer;
+    
+    /** The */
+    private FidSet                  updated;
     
 
     public void init( Properties props ) {
@@ -199,6 +206,18 @@ public class EntitySourceProcessor
     }
 
 
+    @Override
+    public void revert( Filter filter, IProgressMonitor monitor ) {
+        if (filter.equals( Filter.INCLUDE )) {
+            entityProvider.revert();
+            fireFeatureChangeEvent( Collections.EMPTY_SET, FeatureChangeEvent.Type.FLUSHED );
+        }
+        else {
+            throw new UnsupportedOperationException( "Revert filter != INCLUDE" );
+        }
+    }
+
+    
     public void processRequest( ProcessorRequest r, ProcessorContext context )
             throws Exception {
         // resolve FeatureSource
@@ -506,14 +525,7 @@ public class EntitySourceProcessor
      * @param features
      * @param eventType
      */
-    private void fireFeatureChangeEvent( Set<FeatureId> fids, FeatureChangeEvent.Type eventType ) { //        List<Feature> features = new ArrayList( fids.size() );
-//        if (eventType != FeatureChangeEvent.Type.REMOVED) {
-//            for (FeatureId fid : fids) {
-//                Entity entity = entityProvider.findEntity( fid.getID() );
-//                Feature feature = buildFeature( entity );
-//                features.add( feature );
-//            }
-//        }
+    private void fireFeatureChangeEvent( Set<FeatureId> fids, FeatureChangeEvent.Type eventType ) {
         FeatureChangeEvent ev = new FeatureChangeEvent( layer, eventType, fids );
         EventManager.instance().publish( ev );
     }

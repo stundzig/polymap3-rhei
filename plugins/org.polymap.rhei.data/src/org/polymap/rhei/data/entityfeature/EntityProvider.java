@@ -70,4 +70,6 @@ public interface EntityProvider<T extends Entity> {
 
     public Set<FeatureId> removeEntity( BooleanExpression query );
 
+    public void revert();
+
 }

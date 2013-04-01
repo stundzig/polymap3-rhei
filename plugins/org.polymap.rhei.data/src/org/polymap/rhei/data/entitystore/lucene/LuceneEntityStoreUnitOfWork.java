@@ -129,7 +129,13 @@ public final class LuceneEntityStoreUnitOfWork
 
     public StateCommitter apply()
     throws EntityStoreException {
-        return entityStoreSPI.apply( modified.values(), identity );
+        try {
+            return entityStoreSPI.apply( modified.values(), identity );
+        }
+        finally {
+            // XXX is this ok?
+            modified = new MapMaker().initialCapacity( 256 ).concurrencyLevel( 8 ).makeMap();
+        }
     }
 
 
