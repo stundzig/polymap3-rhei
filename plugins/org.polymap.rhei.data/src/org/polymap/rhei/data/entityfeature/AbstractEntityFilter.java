@@ -20,7 +20,6 @@ package org.polymap.rhei.data.entityfeature;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.geotools.factory.CommonFactoryFinder;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
 import org.opengis.filter.Id;
@@ -37,6 +36,7 @@ import org.eclipse.swt.widgets.Composite;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 
+import org.polymap.core.data.DataPlugin;
 import org.polymap.core.model.Entity;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.workbench.PolymapWorkbench;
@@ -55,7 +55,7 @@ public abstract class AbstractEntityFilter
 
     private static Log log = LogFactory.getLog( AbstractEntityFilter.class );
 
-    protected static final FilterFactory    ff = CommonFactoryFinder.getFilterFactory( null );
+    protected static final FilterFactory    ff = DataPlugin.ff;
 
     protected Class<? extends Entity>       entityClass;
 
@@ -121,15 +121,15 @@ public abstract class AbstractEntityFilter
 
 
     protected Id buildFidFilter( Query<? extends Entity> entities, int maxResults ) {
-        Set<Identifier> ids = new HashSet<Identifier>();
+        Set<Identifier> fids = new HashSet<Identifier>();
         int count = 0;
         for (Entity entity : entities) {
             if (count++ >= maxResults) {
                 break;
             }
-            ids.add( ff.featureId( entity.id() ) );
+            fids.add( ff.featureId( entity.id() ) );
         }
-        return ff.id( ids );
+        return ff.id( fids );
     }
 
 }

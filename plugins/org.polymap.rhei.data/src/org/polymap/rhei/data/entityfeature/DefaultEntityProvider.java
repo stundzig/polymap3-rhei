@@ -17,9 +17,8 @@
  */
 package org.polymap.rhei.data.entityfeature;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 
 import org.geotools.filter.identity.FeatureIdImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
@@ -34,6 +33,7 @@ import org.qi4j.api.query.grammar.BooleanExpression;
 
 import com.vividsolutions.jts.geom.Geometry;
 
+import org.polymap.core.data.feature.FidSet;
 import org.polymap.core.model.Entity;
 import org.polymap.core.model.EntityType;
 import org.polymap.core.qi4j.QiModule;
@@ -54,21 +54,12 @@ public abstract class DefaultEntityProvider<T extends Entity>
     protected EntityType<T>         type;
 
     protected Name                  name;
+    
 
-    private FidsQueryProvider       queryProvider;
-
-
-    public DefaultEntityProvider( QiModule repo, Class<T> entityClass, Name entityName,
-            FidsQueryProvider queryProvider ) {
+    public DefaultEntityProvider( QiModule repo, Class<T> entityClass, Name entityName ) {
         this.repo = repo;
         this.type = repo.entityType( entityClass );
         this.name = entityName;
-        this.queryProvider = queryProvider;
-    }
-
-
-    public FidsQueryProvider getQueryProvider() {
-        return queryProvider;
     }
 
 
@@ -83,30 +74,14 @@ public abstract class DefaultEntityProvider<T extends Entity>
 
 
     public Iterable<T> entities( BooleanExpression query, int firstResult, int maxResults ) {
-        // special FidsQueryExpression
-        if (query instanceof FidsQueryExpression) {
-            return ((FidsQueryExpression)query).entities( repo, type.getType(), firstResult, maxResults );
-        }
-        // regular query
-        else {
-            return repo.findEntities( type.getType(), query, firstResult, maxResults );
-        }
+        return repo.findEntities( type.getType(), query, firstResult, maxResults );
     }
 
 
     public int entitiesSize( BooleanExpression query, int firstResult, int maxResults ) {
-        // FidsQueryExpression
-        if (query instanceof FidsQueryExpression) {
-            // assuming that the fids exist
-            return Math.min( maxResults - firstResult,
-                    ((FidsQueryExpression)query).entitiesSize() );
-        }
-        // regular query
-        else {
-            // XXX cache result for subsequent entities() call?
-            Query result = repo.findEntities( type.getType(), query, firstResult, maxResults );
-            return (int)result.count();
-        }
+        // XXX cache result for subsequent entities() call?
+        Query result = repo.findEntities( type.getType(), query, firstResult, maxResults );
+        return (int)result.count();
     }
 
 
@@ -118,22 +93,11 @@ public abstract class DefaultEntityProvider<T extends Entity>
 
 
     @Override
-    public List<FeatureId> removeEntity( BooleanExpression query ) {
-        List<FeatureId> result = new ArrayList();
-        
-        // special FidsQueryExpression
-        if (query instanceof FidsQueryExpression) {
-            Iterable<T> entities = ((FidsQueryExpression)query).entities( repo, type.getType(), 0, 1000 );
-            for (T entity : entities) {
-                result.add( new FeatureIdImpl( entity.id() ) );
-                repo.removeEntity( entity );
-            }
-        }
-        else {
-            for (Entity entity : repo.findEntities( type.getType(), query, 0, -1 )) {
-                result.add( new FeatureIdImpl( entity.id() ) );
-                repo.removeEntity( entity );
-            }
+    public Set<FeatureId> removeEntity( BooleanExpression query ) {
+        FidSet result = new FidSet();        
+        for (Entity entity : repo.findEntities( type.getType(), query, 0, -1 )) {
+            result.add( new FeatureIdImpl( entity.id() ) );
+            repo.removeEntity( entity );
         }
         return result;
     }
@@ -171,6 +135,13 @@ public abstract class DefaultEntityProvider<T extends Entity>
         catch (Exception e) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    @Override
+    public void revert() {
+        log.warn( "FIXME FIXME FIXME - reverting ALL changes instead of a layer" );
+        repo.revertChanges();
     }
 
 }

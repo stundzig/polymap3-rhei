@@ -24,6 +24,11 @@ import org.junit.Test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.qi4j.api.common.Optional;
+import org.qi4j.api.entity.EntityComposite;
+import org.qi4j.api.entity.association.Association;
+import org.qi4j.api.entity.association.ManyAssociation;
+import org.qi4j.api.property.Property;
 import org.qi4j.api.query.Query;
 import org.qi4j.api.query.QueryBuilder;
 import org.qi4j.api.query.QueryBuilderFactory;
@@ -56,7 +61,7 @@ public class AssociationTest {
     public static void setUpBeforeClass() throws Exception {
         System.setProperty( "org.apache.commons.logging.simplelog.log.org.polymap.rhei.data", "debug" );
 
-        assembler = new RepositoryAssembler();
+        assembler = new RepositoryAssembler( Person.class, Company.class );
         Energy4Java qi4j = new Energy4Java();
 
         ApplicationSPI application = qi4j.newApplication( new ApplicationAssembler() {
@@ -115,12 +120,8 @@ public class AssociationTest {
         UnitOfWork uow = assembler.uowf.newUnitOfWork();
         QueryBuilderFactory factory = assembler.module.queryBuilderFactory();
 
-        // persons
-        Person paul = uow.get( thePaul );        
-        Person anyPerson = uow.newEntity( Person.class );
-        anyPerson.name().set( "anyPerson" );
-        
         // paul -> found
+        Person paul = uow.get( thePaul );        
         Company template = QueryExpressions.templateFor( Company.class );
         QueryBuilder<Company> builder = factory.newQueryBuilder( Company.class )
                 .where( QueryExpressions.eq( template.chief(), paul ) );
@@ -131,11 +132,45 @@ public class AssociationTest {
         Assert.assertEquals( "theCompany", company.name().get() );
 
         // anyPerson -> not found
+        Person anyPerson = uow.newEntity( Person.class );
+        anyPerson.name().set( "anyPerson" );
+
         builder = factory.newQueryBuilder( Company.class )
                 .where( QueryExpressions.eq( template.chief(), anyPerson ) );
         query = builder.newQuery( uow );
         
         Assert.assertEquals( 0, query.count() );
     }
+
     
+    /**
+     * 
+     */
+    public static interface Person
+            extends EntityComposite {
+
+        @Optional
+        public Property<String>     name();
+        
+        @Optional
+        public Property<Integer>    age();
+        
+    }
+
+    /**
+     * 
+     */
+    public static interface Company
+            extends EntityComposite {
+
+        @Optional
+        public Property<String>         name();
+        
+        @Optional
+        public Association<Person>      chief();
+        
+        public ManyAssociation<Person>  employees();
+        
+    }
+
 }

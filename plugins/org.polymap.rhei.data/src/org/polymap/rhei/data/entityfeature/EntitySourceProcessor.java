@@ -16,11 +16,10 @@ package org.polymap.rhei.data.entityfeature;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import java.io.IOException;
 
 import net.refractions.udig.catalog.IService;
@@ -48,11 +47,13 @@ import org.apache.commons.logging.LogFactory;
 import org.qi4j.api.query.grammar.BooleanExpression;
 import org.qi4j.api.value.ValueComposite;
 
-import com.google.common.collect.Lists;
 import com.vividsolutions.jts.geom.Geometry;
+
+import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.core.data.FeatureChangeEvent;
 import org.polymap.core.data.feature.AddFeaturesRequest;
+import org.polymap.core.data.feature.FidSet;
 import org.polymap.core.data.feature.GetFeatureTypeRequest;
 import org.polymap.core.data.feature.GetFeatureTypeResponse;
 import org.polymap.core.data.feature.GetFeaturesRequest;
@@ -62,20 +63,20 @@ import org.polymap.core.data.feature.GetFeaturesSizeResponse;
 import org.polymap.core.data.feature.ModifyFeaturesRequest;
 import org.polymap.core.data.feature.ModifyFeaturesResponse;
 import org.polymap.core.data.feature.RemoveFeaturesRequest;
+import org.polymap.core.data.feature.buffer.IFeatureBufferProcessor;
 import org.polymap.core.data.feature.buffer.LayerFeatureBufferManager;
 import org.polymap.core.data.pipeline.ITerminalPipelineProcessor;
+import org.polymap.core.data.pipeline.PipelineExecutor.ProcessorContext;
 import org.polymap.core.data.pipeline.ProcessorRequest;
 import org.polymap.core.data.pipeline.ProcessorResponse;
 import org.polymap.core.data.pipeline.ProcessorSignature;
-import org.polymap.core.data.pipeline.PipelineExecutor.ProcessorContext;
 import org.polymap.core.model.Entity;
 import org.polymap.core.model.EntityType;
 import org.polymap.core.project.ILayer;
-import org.polymap.core.project.IMap;
 import org.polymap.core.project.LayerUseCase;
 import org.polymap.core.qi4j.QiModule.EntityCreator;
+import org.polymap.core.runtime.event.EventManager;
 
-import org.polymap.rhei.data.entityfeature.EntityProvider.FidsQueryExpression;
 import org.polymap.rhei.data.entityfeature.catalog.EntityGeoResourceImpl;
 import org.polymap.rhei.data.entityfeature.catalog.EntityServiceImpl;
 
@@ -91,7 +92,7 @@ import org.polymap.rhei.data.entityfeature.catalog.EntityServiceImpl;
  * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
  */
 public class EntitySourceProcessor
-        implements ITerminalPipelineProcessor {
+        implements ITerminalPipelineProcessor, IFeatureBufferProcessor {
 
     private static final Log log = LogFactory.getLog( EntitySourceProcessor.class );
 
@@ -136,9 +137,12 @@ public class EntitySourceProcessor
     /** Might be of type {@link EntityProvider2}. @see #schema */
     private EntityProvider<Entity>  entityProvider;
 
-    private Feature2EntityFilterConverter filterConverter;
+    private EntityQueryBuilder      filterConverter;
 
     private ILayer                  layer;
+    
+    /** The */
+    private FidSet                  updated;
     
 
     public void init( Properties props ) {
@@ -147,7 +151,7 @@ public class EntitySourceProcessor
             layer = (ILayer)props.get( "layer" );
             EntityGeoResourceImpl geores = (EntityGeoResourceImpl)layer.getGeoResource();
             entityProvider = geores.resolve( EntityProvider.class, null );
-            filterConverter = new Feature2EntityFilterConverter( entityProvider.getEntityType() );
+            filterConverter = new EntityQueryBuilder( entityProvider.getEntityType() );
 
             // EntityProvider2
             if (entityProvider instanceof EntityProvider2) {
@@ -202,6 +206,18 @@ public class EntitySourceProcessor
     }
 
 
+    @Override
+    public void revert( Filter filter, IProgressMonitor monitor ) {
+        if (filter.equals( Filter.INCLUDE )) {
+            entityProvider.revert();
+            fireFeatureChangeEvent( Collections.EMPTY_SET, FeatureChangeEvent.Type.FLUSHED );
+        }
+        else {
+            throw new UnsupportedOperationException( "Revert filter != INCLUDE" );
+        }
+    }
+
+    
     public void processRequest( ProcessorRequest r, ProcessorContext context )
             throws Exception {
         // resolve FeatureSource
@@ -218,7 +234,7 @@ public class EntitySourceProcessor
         // AddFeatures
         else if (r instanceof AddFeaturesRequest) {
             AddFeaturesRequest request = (AddFeaturesRequest)r;
-            List<FeatureId> fids = addFeatures( request.getFeatures() );
+            Set<FeatureId> fids = addFeatures( request.getFeatures() );
             fireFeatureChangeEvent( fids, FeatureChangeEvent.Type.ADDED );
             context.sendResponse( new ModifyFeaturesResponse( fids ) );
             context.sendResponse( ProcessorResponse.EOP );
@@ -226,14 +242,14 @@ public class EntitySourceProcessor
         // RemoveFeatures
         else if (r instanceof RemoveFeaturesRequest) {
             RemoveFeaturesRequest request = (RemoveFeaturesRequest)r;
-            List<FeatureId> fids = removeFeatures( request.getFilter() );
+            Set<FeatureId> fids = removeFeatures( request.getFilter() );
             fireFeatureChangeEvent( fids, FeatureChangeEvent.Type.REMOVED );
             context.sendResponse( ProcessorResponse.EOP );
         }
         // ModifyFeatures
         else if (r instanceof ModifyFeaturesRequest) {
             ModifyFeaturesRequest request = (ModifyFeaturesRequest)r;
-            List<FeatureId> fids = modifyFeatures( request.getType(), request.getValue(), request.getFilter() );
+            Set<FeatureId> fids = modifyFeatures( request.getType(), request.getValue(), request.getFilter() );
             fireFeatureChangeEvent( fids, FeatureChangeEvent.Type.MODIFIED );
             context.sendResponse( ProcessorResponse.EOP );
         }
@@ -264,35 +280,7 @@ public class EntitySourceProcessor
             int firstResult = query.getStartIndex() != null ? query.getStartIndex() : 0;
             int maxResults = query.getMaxFeatures() > 0 ? query.getMaxFeatures() : Integer.MAX_VALUE;
 
-            if (entityQuery instanceof FidsQueryExpression) {
-                FidsQueryExpression fidsQuery = (FidsQueryExpression)entityQuery;
-                // with post-processing
-                if (fidsQuery.hasPostProcess()) {
-                    final AtomicInteger count = new AtomicInteger();
-                    getFeatures( query, new ProcessorContext() {
-                        @Override
-                        public void sendResponse( ProcessorResponse response ) throws Exception {
-                            if (response instanceof GetFeaturesResponse) {
-                                count.addAndGet( ((GetFeaturesResponse)response).count() );
-                            }
-                        }
-                        public void sendRequest( ProcessorRequest request ) throws Exception {}
-                        public Object put( String key, Object data ) { throw new UnsupportedOperationException(); }
-                        public IService getService() { throw new UnsupportedOperationException(); }
-                        public IMap getMap() { throw new UnsupportedOperationException(); }
-                        public Set<ILayer> getLayers() { throw new UnsupportedOperationException(); }
-                        public Object get( String key ) { throw new UnsupportedOperationException(); }
-                    });
-                    return count.get();
-                }
-                // no post-processing
-                else {
-                    return fidsQuery.entitiesSize();
-                }
-            }
-            else {
-                return entityProvider.entitiesSize( entityQuery, firstResult, maxResults );
-            }
+            return entityProvider.entitiesSize( entityQuery, firstResult, maxResults );
         }
         catch (IOException e) {
             throw e;
@@ -331,15 +319,10 @@ public class EntitySourceProcessor
 
             Feature feature = buildFeature( entity );
             
-            feature = entityQuery instanceof FidsQueryExpression
-                    ? ((FidsQueryExpression)entityQuery).postProcess( feature )
-                    : feature;
-
             if (feature != null) {
                 chunk.add( feature );
                 if (chunk.size() >= DEFAULT_CHUNK_SIZE) {
                     chunk.trimToSize();
-                    //log.debug( "                sending chunk: " + chunk.size() );
                     context.sendResponse( new GetFeaturesResponse( chunk ) );
                     chunk = new ArrayList( DEFAULT_CHUNK_SIZE );
                 }
@@ -350,26 +333,8 @@ public class EntitySourceProcessor
         }
         if (!chunk.isEmpty()) {
             chunk.trimToSize();
-            //log.debug( "                sending chunk: " + chunk.size() );
             context.sendResponse( new GetFeaturesResponse( chunk ) );
         }
-        
-        // changed/added entities
-        chunk = new ArrayList( DEFAULT_CHUNK_SIZE );
-        LayerEntityBufferManager buffer = LayerEntityBufferManager.forLayer( layer, entityProvider );
-        for (FeatureId fid : buffer.added()) {
-            Entity entity = entityProvider.findEntity( fid.getID() );
-            Feature feature = buildFeature( entity );
-            if (filter.evaluate( feature )) {
-                chunk.add( feature );
-            }
-        }
-        if (!chunk.isEmpty()) {
-            chunk.trimToSize();
-            //log.debug( "                sending chunk: " + chunk.size() );
-            context.sendResponse( new GetFeaturesResponse( chunk ) );
-        }
-
         log.debug( "    getFeatures(): " + (System.currentTimeMillis()-start) + "ms" );
     }
 
@@ -382,10 +347,10 @@ public class EntitySourceProcessor
         if (entityProvider instanceof EntityProvider3) {
             query = ((EntityProvider3)entityProvider).transformQuery( query );
         }
-        // try OGC -> native query (Lucene)
-        if (entityProvider.getQueryProvider() != null) {
-            return entityProvider.getQueryProvider().convert( query, schema, entityProvider.getEntityType() );
-        }
+//        // try OGC -> native query (Lucene)
+//        if (entityProvider.getQueryProvider() != null) {
+//            return entityProvider.getQueryProvider().convert( query, schema, entityProvider.getEntityType() );
+//        }
         // try OGC -> Qi4j
         if (filterConverter != null) {
             return filterConverter.convert( query.getFilter() );
@@ -453,11 +418,11 @@ public class EntitySourceProcessor
 //    }
 
 
-    protected List<FeatureId> addFeatures( Collection<Feature> features )
+    protected Set<FeatureId> addFeatures( Collection<Feature> features )
     throws Exception {
         final EntityType type = entityProvider.getEntityType();
 
-        List<FeatureId> result = new ArrayList();
+        FidSet result = new FidSet();
         for (final Feature feature : features) {
 
             Entity entity = entityProvider.newEntity( new EntityCreator<Entity>() {
@@ -488,7 +453,7 @@ public class EntitySourceProcessor
     }
 
 
-    protected List<FeatureId> removeFeatures( Filter filter )
+    protected Set<FeatureId> removeFeatures( Filter filter )
     throws IOException {
         log.debug( "            Filter: " + filter );
         try {
@@ -504,18 +469,18 @@ public class EntitySourceProcessor
     }
 
 
-    protected List<FeatureId> modifyFeatures( AttributeDescriptor[] type, Object[] value, Filter filter )
+    protected Set<FeatureId> modifyFeatures( AttributeDescriptor[] type, Object[] value, Filter filter )
     throws IOException {
         log.debug( "            Filter: " + filter );
 
-        List<FeatureId> ids = Lists.newArrayList(); 
+        FidSet result = new FidSet(); 
             
         // filter -> entities
         List<Entity> entities = new ArrayList();
         if (filter instanceof Id) {
             for (Identifier id : ((Id)filter).getIdentifiers()) {
                 entities.add( entityProvider.findEntity( (String)id.getID() ) );
-                ids.add( (FeatureId)id );
+                result.add( (FeatureId)id );
             }
         }
         else {
@@ -547,7 +512,7 @@ public class EntitySourceProcessor
                 }
             }
         }
-        return ids;
+        return result;
     }
 
     
@@ -564,17 +529,9 @@ public class EntitySourceProcessor
      * @param features
      * @param eventType
      */
-    private void fireFeatureChangeEvent( List<FeatureId> fids, FeatureChangeEvent.Type eventType ) {
-        List<Feature> features = new ArrayList( fids.size() );
-        if (eventType != FeatureChangeEvent.Type.REMOVED) {
-            for (FeatureId fid : fids) {
-                Entity entity = entityProvider.findEntity( fid.getID() );
-                Feature feature = buildFeature( entity );
-                features.add( feature );
-            }
-        }
-        LayerEntityBufferManager buffer = LayerEntityBufferManager.forLayer( layer, entityProvider );
-        buffer.fireFeatureChangeEvent( features, eventType );
+    private void fireFeatureChangeEvent( Set<FeatureId> fids, FeatureChangeEvent.Type eventType ) {
+        FeatureChangeEvent ev = new FeatureChangeEvent( layer, eventType, fids );
+        EventManager.instance().publish( ev );
     }
 
     

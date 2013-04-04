@@ -15,6 +15,7 @@
  */
 package org.polymap.rhei.data.entitystore.test;
 
+import org.qi4j.api.entity.EntityComposite;
 import org.qi4j.api.structure.Application;
 import org.qi4j.api.structure.Module;
 import org.qi4j.api.unitofwork.UnitOfWorkFactory;
@@ -42,8 +43,11 @@ public class RepositoryAssembler {
 
     Module                      module;
 
+    private Class<? extends EntityComposite>[] entities;
+    
 
-    public RepositoryAssembler() {
+    public RepositoryAssembler( Class<? extends EntityComposite>... entities ) {
+        this.entities = entities;
     }
 
 
@@ -59,10 +63,7 @@ public class RepositoryAssembler {
         // project layer / module
         LayerAssembly domainLayer = _app.layerAssembly( "application-layer" );
         ModuleAssembly domainModule = domainLayer.moduleAssembly( "test-module" );
-        domainModule.addEntities(
-                Person.class,
-                Company.class
-                );
+        domainModule.addEntities( entities );
 //        domainModule.addValues(
 //                AktivitaetValue.class,
 //                BiotoptypValue.class,

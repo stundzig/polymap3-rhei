@@ -14,6 +14,7 @@
  */
 package org.polymap.rhei.data.entitystore.lucene;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -25,6 +26,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+
 import org.qi4j.api.common.QualifiedName;
 import org.qi4j.api.property.StateHolder.StateVisitor;
 import org.qi4j.api.query.grammar.AssociationNullPredicate;
@@ -53,6 +55,8 @@ import org.qi4j.runtime.value.ValueModel;
 import org.qi4j.spi.property.PropertyType;
 
 import com.google.common.base.Joiner;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.recordstore.IRecordState;
@@ -60,25 +64,36 @@ import org.polymap.core.runtime.recordstore.QueryExpression;
 import org.polymap.core.runtime.recordstore.RecordQuery;
 import org.polymap.core.runtime.recordstore.ResultSet;
 import org.polymap.core.runtime.recordstore.SimpleQuery;
+import org.polymap.core.runtime.recordstore.lucene.LuceneRecordState;
 import org.polymap.core.runtime.recordstore.lucene.LuceneRecordStore;
 import org.polymap.core.runtime.recordstore.lucene.ValueCoders;
+
+import org.polymap.rhei.data.entityfeature.SpatialPredicate;
+import org.polymap.rhei.data.entityfeature.SpatialPredicate.Fids;
 
 /**
  * Converts Qi4j queries into Lucene queries.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-class LuceneQueryParserImpl {
+class LuceneQueryBuilder {
 
-    private static Log log = LogFactory.getLog( LuceneQueryParserImpl.class );
+    private static Log log = LogFactory.getLog( LuceneQueryBuilder.class );
 
     private static final Query          ALL = new MatchAllDocsQuery();
 
     private LuceneRecordStore           store;
+
+    private List<BooleanExpression>     postProcess = new ArrayList();
     
 
-    public LuceneQueryParserImpl( LuceneRecordStore store ) {
+    public LuceneQueryBuilder( LuceneRecordStore store ) {
         this.store = store;
+    }
+
+    
+    public List<BooleanExpression> getPostProcess() {
+        return postProcess;
     }
 
 
@@ -155,9 +170,40 @@ class LuceneQueryParserImpl {
             result.add( arg, BooleanClause.Occur.MUST_NOT );
             return result;
         }
+        // FID
+        else if (expression instanceof SpatialPredicate.Fids) {
+            Fids fids = (Fids)expression;
+            if (fids.size() > BooleanQuery.getMaxClauseCount()) {
+                BooleanQuery.setMaxClauseCount( fids.size() + 10 );
+            }
+            BooleanQuery result = new BooleanQuery();
+            for (String fid : fids) {
+                Query fidQuery = store.getValueCoders().searchQuery( 
+                        new QueryExpression.Equal( LuceneRecordState.ID_FIELD, fid ) );
+                result.add( fidQuery, BooleanClause.Occur.SHOULD );
+            }
+            return result;
+        }
         // comparison
         else if (expression instanceof ComparisonPredicate) {
             return processComparisonPredicate( (ComparisonPredicate)expression );
+        }
+        // INCLUDE
+        else if (expression.equals( SpatialPredicate.INCLUDE )) {
+            return ALL;
+        }
+        // EXCLUDE
+        else if (expression.equals( SpatialPredicate.EXCLUDE )) {
+            // XXX any better way to express?
+            return new TermQuery( new Term( "__does_not_exist__", "true") );
+        }
+        // BBOX
+        else if (expression instanceof SpatialPredicate.BBOX) {
+            return processBBOX( (SpatialPredicate.BBOX)expression );
+        }
+        // Spatial
+        else if (expression instanceof SpatialPredicate) {
+            return processSpatial( (SpatialPredicate)expression );
         }
         // MANY Assoc
         else if (expression instanceof ManyAssociationContainsPredicate) {
@@ -178,6 +224,33 @@ class LuceneQueryParserImpl {
         else {
             throw new UnsupportedOperationException( "Expression " + expression + " is not supported" );
         }
+    }
+
+    
+    @SuppressWarnings("deprecation")
+    protected Query processBBOX( SpatialPredicate.BBOX bbox ) {
+        PropertyReference<Envelope> property = bbox.getPropertyReference();
+        String fieldName = property2Fieldname( property ).toString();
+        
+        Envelope envelope = (Envelope)bbox.getValueExpression().value();
+
+        return store.getValueCoders().searchQuery( 
+                new QueryExpression.BBox( fieldName, envelope.getMinX(), envelope.getMinY(), envelope.getMaxX(), envelope.getMaxY() ) );
+    }
+
+    
+    protected Query processSpatial( SpatialPredicate predicate ) {
+        PropertyReference<Envelope> property = predicate.getPropertyReference();
+        String fieldName = property2Fieldname( property ).toString();
+
+        Geometry value = (Geometry)predicate.getValueExpression().value();
+        
+        Envelope bounds = value.getEnvelopeInternal();
+        
+        postProcess.add( predicate );
+        
+        return store.getValueCoders().searchQuery( 
+                new QueryExpression.BBox( fieldName, bounds.getMinX(), bounds.getMinY(), bounds.getMaxX(), bounds.getMaxY() ) );
     }
 
 
