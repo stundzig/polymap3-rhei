@@ -25,6 +25,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.DateTime;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
@@ -100,5 +101,7 @@ public interface IFormEditorToolkit {
     public abstract DateTime createDateTime( Composite parent, Date value, int style );
 
     public abstract Upload createUpload( Composite parent, int style, int flags );
+
+    public abstract List createList( Composite parent, int comboStyle );
     
 }

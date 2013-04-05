@@ -14,6 +14,9 @@
  */
 package org.polymap.rhei.data.entityfeature;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.geotools.feature.NameImpl;
@@ -59,14 +62,32 @@ public class ManyAssociationAdapter<T>
     }
 
     public Object getValue() {
-//        return association.get();
-        // TODO
-        return null;
+        return association.toList();
     }
 
     public void setValue( Object value ) {
-//        association.set((T)value);
-        // TODO 
+        // merge the two lists
+        Collection<T> toAdd = (Collection<T>)value;
+        // alle vorhandene objekte aus der association rauswerfen und alle neuen reintun
+        // und das über add und remove
+        int count = association.count();
+        List<T> toRemove = new ArrayList<T>();
+        for (int i=0; i<count; i++) {
+            T current = association.get( i );
+            if (toAdd.contains( current )) {
+                toAdd.remove( current );
+            } else {
+                toRemove.add( current );
+            }
+        }
+        // delete all toRemoves
+        for (T current : toRemove) {
+            association.remove( current );
+        }
+        // add all toAdds
+        for (T current : toAdd) {
+            association.add( current );
+        }
     }
 
     public Map<Object, Object> getUserData() {
