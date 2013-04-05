@@ -13,8 +13,10 @@
 package org.polymap.rhei.field;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,16 +34,15 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
+import org.eclipse.rwt.widgets.ExternalBrowser;
 import org.eclipse.rwt.widgets.Upload;
 import org.eclipse.rwt.widgets.UploadEvent;
 import org.eclipse.rwt.widgets.UploadItem;
 import org.eclipse.rwt.widgets.UploadListener;
 
-import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.InputDialog;
-import org.eclipse.jface.dialogs.MessageDialog;
-
 import org.polymap.core.data.DataPlugin;
+import org.polymap.core.data.operation.DownloadServiceHandler;
+import org.polymap.core.data.operation.DownloadServiceHandler.ContentProvider;
 import org.polymap.core.workbench.PolymapWorkbench;
 
 import org.polymap.rhei.form.IFormEditorToolkit;
@@ -92,10 +93,9 @@ public class UploadFormField
         layout.spacing = 5;
         fileSelectionArea.setLayout( layout );
 
-        upload = toolkit.createUpload( fileSelectionArea, SWT.BORDER, Upload.SHOW_PROGRESS
-                | Upload.SHOW_UPLOAD_BUTTON );
-        upload.setBrowseButtonText( "Browse" );
-        upload.setUploadButtonText( "Upload" );
+        upload = toolkit.createUpload( fileSelectionArea, SWT.BORDER, /*Upload.SHOW_PROGRESS |*/ Upload.SHOW_UPLOAD_BUTTON );
+        upload.setBrowseButtonText( "Datei..." );
+        upload.setUploadButtonText( "Laden" );
         upload.setEnabled( enabled );
         upload.setBackground( enabled ? FormEditorToolkit.textBackground
                 : FormEditorToolkit.textBackgroundDisabled );
@@ -104,7 +104,7 @@ public class UploadFormField
         data.right = new FormAttachment( 80 );
         upload.setLayoutData( data );
 
-        viewImageButton = toolkit.createButton( fileSelectionArea, "Anzeigen", SWT.BORDER );
+        viewImageButton = toolkit.createButton( fileSelectionArea, "Anzeigen", SWT.NONE );
         data = new FormData();
         data.left = new FormAttachment( 80 );
         data.right = new FormAttachment( 100 );
@@ -112,18 +112,36 @@ public class UploadFormField
         enableViewButton( enabled );
         
         viewImageButton.addSelectionListener( new SelectionListener() {
-
             @Override
             public void widgetSelected( SelectionEvent e ) {
-                // open a dialog with the image preview
-                final MessageDialog dialog = new MessageDialog( PolymapWorkbench
-                        .getShellToParentOn(), uploadedValue.originalFileName(), null, "",
-                        MessageDialog.INFORMATION, new String[] { "Schlieﬂen" }, 0 );
-                dialog.setBlockOnOpen( true );
-                dialog.open();
+                String url = DownloadServiceHandler.registerContent( new ContentProvider() {
+                    @Override
+                    public String getFilename() {
+                        return uploadedValue.originalFileName();
+                    }
+                    @Override
+                    public String getContentType() {
+                        return uploadedValue.contentType();
+                    }
+                    @Override
+                    public InputStream getInputStream() throws Exception {
+                        return new FileInputStream( new File( uploadDir, uploadedValue.internalFileName() ) );
+                    }
+                    @Override
+                    public boolean done( boolean success ) {
+                        return true;
+                    }
+                });
+                ExternalBrowser.open( "download_window", url,
+                        ExternalBrowser.NAVIGATION_BAR | ExternalBrowser.STATUS );
+
+//                // open a dialog with the image preview
+//                final MessageDialog dialog = new MessageDialog( PolymapWorkbench
+//                        .getShellToParentOn(), uploadedValue.originalFileName(), null, "",
+//                        MessageDialog.INFORMATION, new String[] { "Schlieﬂen" }, 0 );
+//                dialog.setBlockOnOpen( true );
+//                dialog.open();
             }
-
-
             @Override
             public void widgetDefaultSelected( SelectionEvent e ) {
             }
@@ -131,13 +149,10 @@ public class UploadFormField
 
         // uploadlistener
         upload.addUploadListener( new UploadListener() {
-
             @Override
             public void uploadInProgress( UploadEvent uploadEvent ) {
                 // TODO show a progress monitor here
             }
-
-
             @Override
             public void uploadFinished( UploadEvent uploadEvent ) {
                 UploadItem item = upload.getUploadItem();
@@ -162,6 +177,7 @@ public class UploadFormField
                     uploadedValue = new DefaultUploadedImage( fileName, item.getFilePath(), item
                             .getContentType(), internalFileName, dbFile.length() );
 
+                    enableViewButton( true );
                 }
                 catch (IOException e) {
                     PolymapWorkbench.handleError( DataPlugin.PLUGIN_ID, UploadFormField.this,
@@ -174,13 +190,12 @@ public class UploadFormField
         } );
         // focus listener
         upload.addFocusListener( new FocusListener() {
-
+            @Override
             public void focusLost( FocusEvent event ) {
                 upload.setBackground( FormEditorToolkit.textBackground );
                 site.fireEvent( UploadFormField.this, IFormFieldListener.FOCUS_LOST, null );
             }
-
-
+            @Override
             public void focusGained( FocusEvent event ) {
                 upload.setBackground( FormEditorToolkit.textBackgroundFocused );
                 site.fireEvent( UploadFormField.this, IFormFieldListener.FOCUS_GAINED, null );
