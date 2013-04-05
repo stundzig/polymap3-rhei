@@ -56,6 +56,7 @@ public class CompositesFeatureContentProvider
     public CompositesFeatureContentProvider(
             Iterable<? extends Composite> composites,
             EntityType<? extends Composite> compositeType) {
+        assert compositeType != null;
         this.composites = composites;
         this.compositeType = compositeType;
     }

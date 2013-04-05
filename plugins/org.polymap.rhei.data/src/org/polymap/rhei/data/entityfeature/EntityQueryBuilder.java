@@ -128,7 +128,7 @@ class EntityQueryBuilder {
             BinaryComparisonOperator comparison = (BinaryComparisonOperator)filter;
             // XXX expect propName and literal in order
             PropertyName propName = (PropertyName)comparison.getExpression1();
-            Literal literal = (Literal)comparison.getExpression1();
+            Literal literal = (Literal)comparison.getExpression2();
 
             if (comparison instanceof PropertyIsEqualTo) {
                 result = QueryExpressions.eq( property( propName.getPropertyName() ), literal.getValue() );
