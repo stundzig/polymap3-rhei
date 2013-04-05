@@ -35,6 +35,7 @@ import org.eclipse.swt.widgets.Tree;
 
 import org.eclipse.rwt.graphics.Graphics;
 import org.eclipse.rwt.lifecycle.WidgetUtil;
+import org.eclipse.rwt.widgets.Upload;
 
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
@@ -168,6 +169,14 @@ public class FormEditorToolkit
     public Tree createTree( Composite parent, int style ) {
         return delegate.createTree( parent, style );
     }
+    
+    public Upload createUpload( Composite parent, int style, int flags ) {
+        Upload upload = new Upload( parent, style, flags );
+        delegate.adapt( upload, false, false );
+        upload.setBackground( textBackground );
+        upload.setData( WidgetUtil.CUSTOM_VARIANT, "formeditor" );
+        return upload;
+    }
 
     public Combo createCombo( Composite parent, Set<String> values ) {
         return createCombo( parent, values, SWT.DROP_DOWN );
@@ -202,5 +211,4 @@ public class FormEditorToolkit
         }
         return result;
     }
-    
 }

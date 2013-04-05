@@ -123,7 +123,7 @@ public abstract class DefaultFormEditorPage
     /**
      * Creates a new section in the form. The section is expanded by default.
      * 
-     * @param sectionTitle The title of this section.
+     * @param sectionTitle The title of this section, can be null or empty.
      * @param rightOf True indicates that the section is placed right of the
      *        <code>relative</code>, or at the bottom otherwise.
      * @param relative
@@ -133,8 +133,13 @@ public abstract class DefaultFormEditorPage
         Composite parent = pageSite.getPageBody();
         IFormEditorToolkit tk = pageSite.getToolkit();
         
-        Section section = tk.createSection( parent, Section.TITLE_BAR /*| Section.TREE_NODE*/ );
-        section.setText( sectionTitle );
+        Section section = null;
+        if (sectionTitle == null || sectionTitle.isEmpty()) {
+            section = tk.createSection( parent, Section.NO_TITLE );
+        } else {
+            tk.createSection( parent, Section.TITLE_BAR /*| Section.TREE_NODE*/ );
+            section.setText( sectionTitle );
+        }    
         section.setExpanded( true );
         //section.setLayout( new FillLayout() );
 
