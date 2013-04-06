@@ -43,6 +43,7 @@ import org.apache.commons.logging.LogFactory;
 import org.qi4j.api.unitofwork.NoSuchEntityException;
 
 import org.eclipse.swt.widgets.Composite;
+
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
@@ -75,13 +76,14 @@ import org.polymap.core.runtime.event.EventFilter;
 import org.polymap.core.runtime.event.EventHandler;
 import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.workbench.PolymapWorkbench;
+
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
 import org.polymap.rhei.field.FormFieldEvent;
 import org.polymap.rhei.field.IFormFieldListener;
+import org.polymap.rhei.internal.form.FeatureOperationsItem;
 import org.polymap.rhei.internal.form.FormEditorPageContainer;
 import org.polymap.rhei.internal.form.FormPageProviderExtension;
-import org.polymap.rhei.internal.form.FeatureOperationsItem;
 
 /**
  *
@@ -433,11 +435,29 @@ public class FormEditor
         // get all pages
         for (FormPageProviderExtension ext : FormPageProviderExtension.allExtensions()) {
             try {
-                IFormPageProvider provider = ext.newPageProvider();
-                _pages.addAll( provider.addPages( this, getFeature() ) );
+                // ignore standard editors on first iteration
+                if (!ext.isStandard()) {
+                    IFormPageProvider provider = ext.newPageProvider();
+                    _pages.addAll( provider.addPages( this, getFeature() ) );
+                }
             }
             catch (CoreException e) {
                 log.warn( "Exception while initializing pages of FormEditor.", e );
+            }
+        }
+        
+        if (_pages.isEmpty()) {
+            // add standard provider only, if no special providers could be found
+            for (FormPageProviderExtension ext : FormPageProviderExtension.allExtensions()) {
+                try {
+                    if (ext.isStandard()) {
+                        IFormPageProvider provider = ext.newPageProvider();
+                        _pages.addAll( provider.addPages( this, getFeature() ) );
+                    }    
+                }
+                catch (CoreException e) {
+                    log.warn( "Exception while initializing pages of FormEditor.", e );
+                }
             }
         }
 
