@@ -161,10 +161,14 @@ public abstract class SpatialPredicate<T extends Geometry>
         private Map<String,Identifier>   fids;
         
         public Fids( Set<Identifier> fids ) {
-            assert fids != null && !fids.isEmpty() : "Null or empty fids are not allowed.";
+            if (fids != null && !fids.isEmpty()) {
+                System.out.println( "Null or empty fids are not allowed." );
+            }
             this.fids = new HashMap( fids.size() * 2 );
-            for (Identifier fid : fids) {
-                this.fids.put( fid.toString(), fid );
+            if (fids != null) {
+                for (Identifier fid : fids) {
+                    this.fids.put( fid.toString(), fid );
+                }
             }
         }
 
