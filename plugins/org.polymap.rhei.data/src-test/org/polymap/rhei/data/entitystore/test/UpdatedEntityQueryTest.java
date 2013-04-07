@@ -14,6 +14,8 @@
  */
 package org.polymap.rhei.data.entitystore.test;
 
+import java.util.Date;
+
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,6 +50,8 @@ public class UpdatedEntityQueryTest {
     private static RepositoryAssembler assembler;
 
     private static Person thePaul;
+    
+    private static Date birthday = new Date();
 
 
     @BeforeClass
@@ -74,6 +78,7 @@ public class UpdatedEntityQueryTest {
         thePaul = uow.newEntity( Person.class );
         thePaul.name().set( "paul" );
         thePaul.age().set( 24 );
+        thePaul.birthday().set( birthday );
         uow.complete();
     }
 
@@ -86,7 +91,9 @@ public class UpdatedEntityQueryTest {
         QueryBuilder<Person> builder = factory.newQueryBuilder( Person.class )
                 .where( QueryExpressions.and(
                         QueryExpressions.eq( template.name(), "paul" ),
-                        QueryExpressions.eq( template.age(), 24 ) ) );
+                        QueryExpressions.eq( template.age(), 24 )
+                       // QueryExpressions.eq( template.birthday(), birthday ) 
+                ));
         return builder.newQuery( uow );
     }
 
@@ -96,6 +103,7 @@ public class UpdatedEntityQueryTest {
         for (Person person : query) {
             Assert.assertEquals( "paul", person.name().get() );
             Assert.assertEquals( (Integer)24, person.age().get() );
+            Assert.assertEquals( birthday, person.birthday().get() );
         }
     }
 
@@ -109,6 +117,7 @@ public class UpdatedEntityQueryTest {
         person.name().set( "paul" );
         person.surname().set( "eindhoven" );
         person.age().set( 24 );
+        person.birthday().set( birthday );
 
         // update entity
         uow.get( thePaul ).age().set( 25 );
@@ -143,6 +152,7 @@ public class UpdatedEntityQueryTest {
         person.name().set( "paul" );
         person.surname().set( "eindhoven" );
         person.age().set( 24 );
+        person.birthday().set( birthday );
         
         // update entity
         uow.get( thePaul ).age().set( 25 );
@@ -169,6 +179,7 @@ public class UpdatedEntityQueryTest {
         Person person = uow.newEntity( Person.class );
         person.name().set( "paul" );
         person.age().set( 24 );
+        person.birthday().set( birthday );
         checkResult( query, 2 );
 
         // modify added entity
@@ -216,6 +227,9 @@ public class UpdatedEntityQueryTest {
         
         @Optional
         public Property<Integer>    age();
+        
+        @Optional
+        public Property<Date>       birthday();
         
     }
 

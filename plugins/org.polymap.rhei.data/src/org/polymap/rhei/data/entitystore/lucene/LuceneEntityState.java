@@ -25,6 +25,7 @@ import java.lang.reflect.Type;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.qi4j.api.common.QualifiedName;
 import org.qi4j.api.common.TypeName;
 import org.qi4j.api.entity.EntityReference;
@@ -226,7 +227,7 @@ public class LuceneEntityState
 
 
     public String toString() {
-        return identity + "(" + record.toString() + ")";
+        return identity + "[" + record.toString() + "]";
     }
 
 
