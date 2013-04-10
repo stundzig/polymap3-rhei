@@ -86,7 +86,7 @@ public class UpdatedEntityQueryTest {
     protected Query<Person> doQuery( UnitOfWork uow ) throws Exception {
         QueryBuilderFactory factory = assembler.module.queryBuilderFactory();
 
-        Person paul = uow.get( thePaul );        
+        //Person paul = uow.get( thePaul );        
         Person template = QueryExpressions.templateFor( Person.class );
         QueryBuilder<Person> builder = factory.newQueryBuilder( Person.class )
                 .where( QueryExpressions.and(
