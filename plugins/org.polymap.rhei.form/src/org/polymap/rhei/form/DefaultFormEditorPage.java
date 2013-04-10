@@ -137,7 +137,7 @@ public abstract class DefaultFormEditorPage
         if (sectionTitle == null || sectionTitle.isEmpty()) {
             section = tk.createSection( parent, Section.NO_TITLE );
         } else {
-            tk.createSection( parent, Section.TITLE_BAR /*| Section.TREE_NODE*/ );
+            section = tk.createSection( parent, Section.TITLE_BAR /*| Section.TREE_NODE*/ );
             section.setText( sectionTitle );
         }    
         section.setExpanded( true );

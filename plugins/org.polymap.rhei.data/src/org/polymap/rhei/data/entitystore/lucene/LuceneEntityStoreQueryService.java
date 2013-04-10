@@ -14,6 +14,8 @@
  */
 package org.polymap.rhei.data.entitystore.lucene;
 
+import static com.google.common.collect.Iterables.transform;
+
 import java.util.Arrays;
 
 import java.io.IOException;
@@ -21,8 +23,6 @@ import java.io.IOException;
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
@@ -40,7 +40,6 @@ import org.qi4j.spi.query.EntityFinder;
 import org.qi4j.spi.query.EntityFinderException;
 
 import com.google.common.base.Function;
-import static com.google.common.collect.Iterables.transform;
 
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.recordstore.IRecordState;
@@ -74,8 +73,6 @@ public interface LuceneEntityStoreQueryService
         @Service
         private LuceneEntityStoreService    storeService;
         
-        private IdentityFieldSelector       identityFieldSelector = new IdentityFieldSelector();
-
         
         public Iterable<EntityReference> findEntities( 
                 String resultType,
@@ -170,18 +167,18 @@ public interface LuceneEntityStoreQueryService
         }
 
         
-        /**
-         * 
-         */
-        class IdentityFieldSelector
-                implements FieldSelector {
-
-            public FieldSelectorResult accept( String fieldName ) {
-                return fieldName.equals( "identity" ) 
-                        ? FieldSelectorResult.LOAD : FieldSelectorResult.NO_LOAD;
-            }
-            
-        }
+//        /**
+//         * 
+//         */
+//        class IdentityFieldSelector
+//                implements FieldSelector {
+//
+//            public FieldSelectorResult accept( String fieldName ) {
+//                return fieldName.equals( "identity" ) 
+//                        ? FieldSelectorResult.LOAD : FieldSelectorResult.NO_LOAD;
+//            }
+//            
+//        }
 
         
         public long countEntities( String resultType, BooleanExpression whereClause )

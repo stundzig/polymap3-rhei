@@ -98,6 +98,8 @@ class LuceneQueryBuilder {
 
 
     public Query createQuery( final String resultType, final BooleanExpression whereClause ) {
+        assert postProcess.isEmpty();
+        
         Query filterQuery = processFilter( whereClause, resultType );
 
         Query typeQuery = new TermQuery( new Term( "type", resultType ) );
@@ -194,7 +196,7 @@ class LuceneQueryBuilder {
         }
         // EXCLUDE
         else if (expression.equals( SpatialPredicate.EXCLUDE )) {
-            // XXX any better way to express?
+            // XXX any better way to express this?
             return new TermQuery( new Term( "__does_not_exist__", "true") );
         }
         // BBOX
@@ -227,7 +229,6 @@ class LuceneQueryBuilder {
     }
 
     
-    @SuppressWarnings("deprecation")
     protected Query processBBOX( SpatialPredicate.BBOX bbox ) {
         PropertyReference<Envelope> property = bbox.getPropertyReference();
         String fieldName = property2Fieldname( property ).toString();
