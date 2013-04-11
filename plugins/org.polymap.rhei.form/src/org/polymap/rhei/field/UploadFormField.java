@@ -16,7 +16,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,24 +24,25 @@ import org.apache.log4j.lf5.util.StreamUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Shell;
 
-import org.eclipse.rwt.widgets.ExternalBrowser;
+import org.eclipse.rwt.graphics.Graphics;
 import org.eclipse.rwt.widgets.Upload;
 import org.eclipse.rwt.widgets.UploadEvent;
 import org.eclipse.rwt.widgets.UploadItem;
 import org.eclipse.rwt.widgets.UploadListener;
 
+import org.eclipse.jface.dialogs.MessageDialog;
+
 import org.polymap.core.data.DataPlugin;
-import org.polymap.core.data.operation.DownloadServiceHandler;
-import org.polymap.core.data.operation.DownloadServiceHandler.ContentProvider;
 import org.polymap.core.workbench.PolymapWorkbench;
 
 import org.polymap.rhei.form.IFormEditorToolkit;
@@ -56,21 +56,23 @@ import org.polymap.rhei.internal.form.FormEditorToolkit;
 public class UploadFormField
         implements IFormField {
 
-    private static Log     log     = LogFactory.getLog( UploadFormField.class );
+    private static Log     log           = LogFactory.getLog( UploadFormField.class );
 
     private IFormFieldSite site;
 
     private Upload         upload;
 
-    private boolean        enabled = true;
+    private boolean        enabled       = true;
 
     private UploadedImage  uploadedValue;
 
     private final File     uploadDir;
 
-    private Button         viewImageButton;
+//    private Button         viewImageButton;
 
     private final boolean  showProgress;
+
+    private int            thumbnailSize = 250;
 
 
     public UploadFormField( File uploadDir ) {
@@ -95,14 +97,14 @@ public class UploadFormField
     }
 
 
-    public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {
+    public Control createControl( final Composite parent, IFormEditorToolkit toolkit ) {
         Composite fileSelectionArea = toolkit.createComposite( parent, SWT.NONE );
         FormLayout layout = new FormLayout();
         layout.spacing = 5;
         fileSelectionArea.setLayout( layout );
         int style = Upload.SHOW_UPLOAD_BUTTON;
         if (showProgress) {
-            style  |= Upload.SHOW_PROGRESS;
+            style |= Upload.SHOW_PROGRESS;
         }
         upload = toolkit.createUpload( fileSelectionArea, SWT.BORDER, style );
         upload.setBrowseButtonText( "Datei..." );
@@ -112,63 +114,73 @@ public class UploadFormField
                 : FormEditorToolkit.textBackgroundDisabled );
         FormData data = new FormData();
         data.left = new FormAttachment( 0 );
-        data.right = new FormAttachment( 80 );
+        data.right = new FormAttachment( 100 );
         upload.setLayoutData( data );
 
-        viewImageButton = toolkit.createButton( fileSelectionArea, "Anzeigen", SWT.NONE );
-        data = new FormData();
-        data.left = new FormAttachment( 80 );
-        data.right = new FormAttachment( 100 );
-        viewImageButton.setLayoutData( data );
-        enableViewButton( enabled );
+//        viewImageButton = toolkit.createButton( fileSelectionArea, "Anzeigen", SWT.NONE );
+//        data = new FormData();
+//        data.left = new FormAttachment( 80 );
+//        data.right = new FormAttachment( 100 );
+//        viewImageButton.setLayoutData( data );
+//        enableViewButton( enabled );
 
-        viewImageButton.addSelectionListener( new SelectionListener() {
+        final Shell shell = parent.getShell();
 
-            @Override
-            public void widgetSelected( SelectionEvent e ) {
-                String url = DownloadServiceHandler.registerContent( new ContentProvider() {
-
-                    @Override
-                    public String getFilename() {
-                        return uploadedValue.originalFileName();
-                    }
-
-
-                    @Override
-                    public String getContentType() {
-                        return uploadedValue.contentType();
-                    }
-
-
-                    @Override
-                    public InputStream getInputStream()
-                            throws Exception {
-                        return new FileInputStream( new File( uploadDir, uploadedValue
-                                .internalFileName() ) );
-                    }
-
-
-                    @Override
-                    public boolean done( boolean success ) {
-                        return true;
-                    }
-                } );
-                ExternalBrowser.open( "download_window", url, ExternalBrowser.NAVIGATION_BAR
-                        | ExternalBrowser.STATUS );
-
-                // // open a dialog with the image preview
-                // final MessageDialog dialog = new MessageDialog( PolymapWorkbench
-                // .getShellToParentOn(), uploadedValue.originalFileName(), null, "",
-                // MessageDialog.INFORMATION, new String[] { "Schlie�en" }, 0 );
-                // dialog.setBlockOnOpen( true );
-                // dialog.open();
-            }
-
-
-            @Override
-            public void widgetDefaultSelected( SelectionEvent e ) {
-            }
-        } );
+//        viewImageButton.addSelectionListener( new SelectionListener() {
+//
+//            @Override
+//            public void widgetSelected( SelectionEvent e ) {
+//                String url = DownloadServiceHandler.registerContent( new ContentProvider() {
+//
+//                    @Override
+//                    public String getFilename() {
+//                        return uploadedValue.originalFileName();
+//                    }
+//
+//
+//                    @Override
+//                    public String getContentType() {
+//                        return uploadedValue.contentType();
+//                    }
+//
+//
+//                    @Override
+//                    public InputStream getInputStream()
+//                            throws Exception {
+//                        return new FileInputStream( new File( uploadDir, uploadedValue
+//                                .internalFileName() ) );
+//                    }
+//
+//
+//                    @Override
+//                    public boolean done( boolean success ) {
+//                        return true;
+//                    }
+//                } );
+//                ExternalBrowser.open( "download_window", url, ExternalBrowser.NAVIGATION_BAR
+//                        | ExternalBrowser.STATUS );
+//
+//                // Browser browser = new Browser( shell, SWT.NONE );
+//                // // create the image
+//                // BufferedImage image = createImage();
+//                // // store the image in the SessionStore for the service handler
+//                // RWT.getSessionStore().setAttribute( IMAGE_KEY, image );
+//                // create the HTML with a single <img> tag.
+//                // browser.setText( "<img src=\"" + url + "\"/>" );
+//
+//                // // open a dialog with the image preview
+//                // final MessageDialog dialog = new MessageDialog( PolymapWorkbench
+//                // .getShellToParentOn(), uploadedValue.originalFileName(), null, "",
+//                // MessageDialog.INFORMATION, new String[] { "Schlie�en" }, 0 );
+//                // dialog.setBlockOnOpen( true );
+//                // dialog.open();
+//            }
+//
+//
+//            @Override
+//            public void widgetDefaultSelected( SelectionEvent e ) {
+//            }
+//        } );
 
         // uploadlistener
         upload.addUploadListener( new UploadListener() {
@@ -186,6 +198,20 @@ public class UploadFormField
                 try {
                     log.info( "Uploaded: " + item.getFileName() + ", path=" + item.getFilePath() );
 
+                    // check for images
+                    String contentType = item.getContentType();
+                    if (!("image/jpeg".equalsIgnoreCase( contentType )
+                            || "image/png".equalsIgnoreCase( contentType ) || "image/gif"
+                            .equalsIgnoreCase( contentType ))) {
+                        new MessageDialog(
+                                shell,
+                                "Fehler beim Upload der Daten",
+                                null,
+                                "Es können nur Bilder vom Typ JPG, GIF oder PNG hochgeladen werden.",
+                                MessageDialog.ERROR, new String[] { "Ok" }, 0 ).open();
+                        return;
+                    }
+
                     // dont use the filename here
                     String fileName = item.getFileName();
                     int index = fileName.lastIndexOf( '.' );
@@ -194,16 +220,44 @@ public class UploadFormField
                         extension = fileName.substring( index );
                     }
 
-                    String internalFileName = System.currentTimeMillis() + extension;
+                    String id = System.currentTimeMillis() + "";
+                    String internalFileName = id + extension;
                     File dbFile = new File( uploadDir, internalFileName );
                     FileOutputStream out = new FileOutputStream( dbFile );
                     StreamUtils.copyThenClose( item.getFileInputStream(), out );
                     log.info( "### copied to: " + dbFile );
 
-                    uploadedValue = new DefaultUploadedImage( fileName, item.getFilePath(), item
-                            .getContentType(), internalFileName, dbFile.length() );
+                    // create a thumbnail
+                    Image image = Graphics
+                            .getImage( internalFileName, new FileInputStream( dbFile ) );
+                    int x = image.getBounds().width;
+                    int newX = x;
+                    int y = image.getBounds().height;
+                    int newY = y;
 
-                    enableViewButton( true );
+                    if (x >= y && x > thumbnailSize) {
+                        newX = thumbnailSize;
+                        newY = y * thumbnailSize / x;
+                    }
+                    else if (y > x && y > thumbnailSize) {
+                        newY = thumbnailSize;
+                        newX = x * thumbnailSize / y;
+                    }
+                    // else no need to scale
+                    String thumbnailFileName = id + "_thumb" + extension;
+                    dbFile = new File( uploadDir, thumbnailFileName );
+                    out = new FileOutputStream( dbFile );
+                    ImageLoader loader = new ImageLoader();
+                    loader.data = new ImageData[] { image.getImageData().scaledTo( newX, newY ) };
+                    loader.save( out, SWT.IMAGE_COPY );
+                    log.info( "### thumbnail copied to: " + dbFile );
+
+                    // image.dispose();
+
+                    uploadedValue = new DefaultUploadedImage( fileName, item.getFilePath(),
+                            contentType, internalFileName, thumbnailFileName, dbFile.length() );
+
+//                    enableViewButton( true );
                 }
                 catch (IOException e) {
                     PolymapWorkbench.handleError( DataPlugin.PLUGIN_ID, UploadFormField.this,
@@ -241,22 +295,22 @@ public class UploadFormField
             upload.setBackground( enabled ? FormEditorToolkit.textBackground
                     : FormEditorToolkit.textBackgroundDisabled );
 
-            enableViewButton( enabled );
+//            enableViewButton( enabled );
         }
         return this;
     }
 
 
-    /**
-     * 
-     * @param enabled
-     */
-    private void enableViewButton( boolean enabled ) {
-        enabled = uploadedValue != null && enabled;
-        viewImageButton.setEnabled( enabled );
-        viewImageButton.setBackground( enabled ? FormEditorToolkit.textBackground
-                : FormEditorToolkit.textBackgroundDisabled );
-    }
+//    /**
+//     * 
+//     * @param enabled
+//     */
+//    private void enableViewButton( boolean enabled ) {
+//        enabled = uploadedValue != null && enabled;
+//        viewImageButton.setEnabled( enabled );
+//        viewImageButton.setBackground( enabled ? FormEditorToolkit.textBackground
+//                : FormEditorToolkit.textBackgroundDisabled );
+//    }
 
 
     public IFormField setValue( Object value ) {
@@ -264,7 +318,7 @@ public class UploadFormField
 
         // TODO add decorator or label with the last uploaded file and a link to the
         // image here
-        enableViewButton( true );
+//        enableViewButton( true );
 
         // the above calls does not seem to fire events
         site.fireEvent( UploadFormField.this, IFormFieldListener.VALUE_CHANGE, uploadedValue );
@@ -304,6 +358,8 @@ public class UploadFormField
 
 
         String internalFileName();
+        
+        String thumbnailFileName();
     }
 
 
@@ -318,16 +374,19 @@ public class UploadFormField
 
         private final String internalFileName;
 
+        private final String thumbnailFileName;
+
         private final Long   fileSize;
 
 
         public DefaultUploadedImage( String fileName, String filePath, String contentType,
-                String internalFileName, Long fileSize ) {
+                String internalFileName, String thumbnailFileName, Long fileSize ) {
             this.fileName = fileName;
             this.filePath = filePath;
             this.contentType = contentType;
             this.internalFileName = internalFileName;
             this.fileSize = fileSize;
+            this.thumbnailFileName = thumbnailFileName;
         }
 
 
@@ -360,6 +419,10 @@ public class UploadFormField
             return internalFileName;
         }
 
+        @Override
+        public String thumbnailFileName() {
+            return thumbnailFileName;
+        }
 
         @Override
         public boolean equals( Object obj ) {
