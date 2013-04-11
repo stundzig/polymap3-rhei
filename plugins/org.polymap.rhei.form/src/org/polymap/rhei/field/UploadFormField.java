@@ -70,10 +70,18 @@ public class UploadFormField
 
     private Button         viewImageButton;
 
+    private final boolean  showProgress;
+
 
     public UploadFormField( File uploadDir ) {
+        this( uploadDir, false );
+    }
+
+
+    public UploadFormField( File uploadDir, boolean showProgress ) {
         super();
         this.uploadDir = uploadDir;
+        this.showProgress = showProgress;
     }
 
 
@@ -92,8 +100,11 @@ public class UploadFormField
         FormLayout layout = new FormLayout();
         layout.spacing = 5;
         fileSelectionArea.setLayout( layout );
-
-        upload = toolkit.createUpload( fileSelectionArea, SWT.BORDER, /*Upload.SHOW_PROGRESS |*/ Upload.SHOW_UPLOAD_BUTTON );
+        int style = Upload.SHOW_UPLOAD_BUTTON;
+        if (showProgress) {
+            style  |= Upload.SHOW_PROGRESS;
+        }
+        upload = toolkit.createUpload( fileSelectionArea, SWT.BORDER, style );
         upload.setBrowseButtonText( "Datei..." );
         upload.setUploadButtonText( "Laden" );
         upload.setEnabled( enabled );
@@ -110,38 +121,50 @@ public class UploadFormField
         data.right = new FormAttachment( 100 );
         viewImageButton.setLayoutData( data );
         enableViewButton( enabled );
-        
+
         viewImageButton.addSelectionListener( new SelectionListener() {
+
             @Override
             public void widgetSelected( SelectionEvent e ) {
                 String url = DownloadServiceHandler.registerContent( new ContentProvider() {
+
                     @Override
                     public String getFilename() {
                         return uploadedValue.originalFileName();
                     }
+
+
                     @Override
                     public String getContentType() {
                         return uploadedValue.contentType();
                     }
+
+
                     @Override
-                    public InputStream getInputStream() throws Exception {
-                        return new FileInputStream( new File( uploadDir, uploadedValue.internalFileName() ) );
+                    public InputStream getInputStream()
+                            throws Exception {
+                        return new FileInputStream( new File( uploadDir, uploadedValue
+                                .internalFileName() ) );
                     }
+
+
                     @Override
                     public boolean done( boolean success ) {
                         return true;
                     }
-                });
-                ExternalBrowser.open( "download_window", url,
-                        ExternalBrowser.NAVIGATION_BAR | ExternalBrowser.STATUS );
+                } );
+                ExternalBrowser.open( "download_window", url, ExternalBrowser.NAVIGATION_BAR
+                        | ExternalBrowser.STATUS );
 
-//                // open a dialog with the image preview
-//                final MessageDialog dialog = new MessageDialog( PolymapWorkbench
-//                        .getShellToParentOn(), uploadedValue.originalFileName(), null, "",
-//                        MessageDialog.INFORMATION, new String[] { "Schließen" }, 0 );
-//                dialog.setBlockOnOpen( true );
-//                dialog.open();
+                // // open a dialog with the image preview
+                // final MessageDialog dialog = new MessageDialog( PolymapWorkbench
+                // .getShellToParentOn(), uploadedValue.originalFileName(), null, "",
+                // MessageDialog.INFORMATION, new String[] { "Schlieï¿½en" }, 0 );
+                // dialog.setBlockOnOpen( true );
+                // dialog.open();
             }
+
+
             @Override
             public void widgetDefaultSelected( SelectionEvent e ) {
             }
@@ -149,10 +172,13 @@ public class UploadFormField
 
         // uploadlistener
         upload.addUploadListener( new UploadListener() {
+
             @Override
             public void uploadInProgress( UploadEvent uploadEvent ) {
                 // TODO show a progress monitor here
             }
+
+
             @Override
             public void uploadFinished( UploadEvent uploadEvent ) {
                 UploadItem item = upload.getUploadItem();
@@ -190,11 +216,14 @@ public class UploadFormField
         } );
         // focus listener
         upload.addFocusListener( new FocusListener() {
+
             @Override
             public void focusLost( FocusEvent event ) {
                 upload.setBackground( FormEditorToolkit.textBackground );
                 site.fireEvent( UploadFormField.this, IFormFieldListener.FOCUS_LOST, null );
             }
+
+
             @Override
             public void focusGained( FocusEvent event ) {
                 upload.setBackground( FormEditorToolkit.textBackgroundFocused );
@@ -211,7 +240,7 @@ public class UploadFormField
             upload.setEnabled( enabled );
             upload.setBackground( enabled ? FormEditorToolkit.textBackground
                     : FormEditorToolkit.textBackgroundDisabled );
-            
+
             enableViewButton( enabled );
         }
         return this;
@@ -219,7 +248,7 @@ public class UploadFormField
 
 
     /**
-     *
+     * 
      * @param enabled
      */
     private void enableViewButton( boolean enabled ) {
