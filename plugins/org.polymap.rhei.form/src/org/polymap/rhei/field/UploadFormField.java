@@ -207,7 +207,7 @@ public class UploadFormField
                                 shell,
                                 "Fehler beim Upload der Daten",
                                 null,
-                                "Es kÃ¶nnen nur Bilder vom Typ JPG, GIF oder PNG hochgeladen werden.",
+                                "Es können nur Bilder vom Typ JPG, GIF oder PNG hochgeladen werden.",
                                 MessageDialog.ERROR, new String[] { "Ok" }, 0 ).open();
                         return;
                     }

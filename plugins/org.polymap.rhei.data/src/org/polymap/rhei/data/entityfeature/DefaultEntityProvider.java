@@ -133,7 +133,8 @@ public abstract class DefaultEntityProvider<T extends Entity>
             return new ReferencedEnvelope( minX, maxX, minY, maxY, getCoordinateReferenceSystem( null ) );
         }
         catch (Exception e) {
-            throw new RuntimeException( e );
+            log.warn( "Error during getBounds(): ", e );
+            return new ReferencedEnvelope( getCoordinateReferenceSystem( null ) );
         }
     }
 
