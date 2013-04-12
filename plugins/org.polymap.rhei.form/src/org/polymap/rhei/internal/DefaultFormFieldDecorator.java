@@ -119,20 +119,20 @@ public class DefaultFormFieldDecorator
     }
     
     public void fieldChange( FormFieldEvent ev ) {
-        if (ev.getEventCode() == VALUE_CHANGE) {
-            dirty = site.isDirty();
-        }
         if (ev.getEventCode() == FOCUS_GAINED) {
             focus = true;
         }
-        if (ev.getEventCode() == FOCUS_LOST) {
+        else if (ev.getEventCode() == FOCUS_LOST) {
             focus = false;
         }
-        
-        invalid = site.getErrorMessage() != null;
-        
-        log.debug( "fieldChange(): dirty= " + dirty + ", focus= " + focus + ", invalid=" + invalid );
-        updateUI();
+        else if (ev.getEventCode() == VALUE_CHANGE) {
+            dirty = site.isDirty();
+
+            invalid = site.getErrorMessage() != null;
+
+            log.debug( "fieldChange(): dirty= " + dirty + ", focus= " + focus + ", invalid=" + invalid );
+            updateUI();
+        }
     }
 
 }
