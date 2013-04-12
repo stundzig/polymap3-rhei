@@ -201,6 +201,10 @@
             class="org.polymap.rhei.internal.form.NewFeatureOperationConcern"
             id="org.polymap.rhei.form.NewFeatureOperationConcern">
       </concern>
+      <concern
+            class="org.polymap.rhei.internal.form.CopyFeaturesOperationConcern"
+            id="org.polymap.rhei.form.CopyFeaturesOperationConcern">
+      </concern>
    </extension>
    <extension
          point="org.polymap.core.mapeditor.mapContextMenu">

@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, Falko Bräutigam, and other contributors as
- * indicated by the @authors tag. All rights reserved.
+ * Copyright 2011-2013, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -42,7 +41,6 @@ import org.polymap.core.workbench.PolymapWorkbench;
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.form.FormEditor;
 
-
 /**
  * 
  *
@@ -71,7 +69,7 @@ public class NewFeatureOperationConcern
                             try {
                                 if (MessageDialog.openQuestion( 
                                         PolymapWorkbench.getShellToParentOn(), 
-                                        i18n.get( "dialogTitle" ),
+                                        i18n.get( "dialogTitle", 1 ),
                                         i18n.get( "dialogMsg" ) )) {
                                     
                                     Feature feature = ((NewFeatureOperation)op).getCreatedFeature();
