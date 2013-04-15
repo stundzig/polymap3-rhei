@@ -147,13 +147,14 @@ public class FilterView
                 Polymap.getSessionDisplay().asyncExec( new Runnable() {
                     public void run() {
                         ProjectRepository.instance().visit( new LayerVisitor() {
-                            public void visit( ILayer layer ) {
+                            public boolean visit( ILayer layer ) {
                                 if (layer.id().equals( layerId )) {
                                     filter = FilterFactory.instance().filterForLayer( layer, filterId );
                                     if (filter != null) {
                                         showFilter( filter );
                                     }
                                 }
+                                return true;
                             }
                         });
                     }

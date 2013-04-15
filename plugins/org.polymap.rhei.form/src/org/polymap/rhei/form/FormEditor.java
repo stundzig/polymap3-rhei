@@ -270,7 +270,7 @@ public class FormEditor
         
         // save listener 
         operationSaveListener = new OperationSaveListener();
-        OperationSupport.instance().addOperationSaveListener( operationSaveListener );
+        OperationSupport.instance().prependOperationSaveListener( operationSaveListener );
 
         // field change listener
         EventManager.instance().subscribe( fieldListener = 
@@ -344,7 +344,7 @@ public class FormEditor
                     public void run() {
                         if (MessageDialog.openQuestion( PolymapWorkbench.getShellToParentOn(),
                                 getPartName(), Messages.get( "FormEditor_prepareSave", getPartName() ) )) {
-                            doSave( monitor );
+                            doSave( monitor, false );
                         }
                     }
                 });
@@ -357,12 +357,16 @@ public class FormEditor
         public void rollback( OperationSupport os, IProgressMonitor monitor ) {
         }
     
-        public void revert( OperationSupport os, IProgressMonitor monitor ) {
+        public void revert( OperationSupport os, final IProgressMonitor monitor ) {
             if (isDirty()) {
-                if (MessageDialog.openQuestion( PolymapWorkbench.getShellToParentOn(),
-                        getPartName(), Messages.get( "FormEditor_prepareRevert", getPartName() ) )) {
-                    doLoad( monitor );
-                }
+                Polymap.getSessionDisplay().syncExec( new Runnable() {
+                    public void run() {
+//                if (MessageDialog.openQuestion( PolymapWorkbench.getShellToParentOn(),
+//                        getPartName(), Messages.get( "FormEditor_prepareRevert", getPartName() ) )) {
+                        doLoad( monitor );
+//                }
+                    }
+                });
             }
         }
     }
@@ -505,8 +509,13 @@ public class FormEditor
         return isDirty;
     }
 
-
+    
     public void doSave( IProgressMonitor monitor ) {
+        doSave( monitor, true );    
+    }
+
+    
+    protected void doSave( IProgressMonitor monitor, boolean runOperation ) {
         log.debug( "doSave(): ..." );
 
         Map<Property,Object> changes = new HashMap();
@@ -542,7 +551,12 @@ public class FormEditor
                     filter,
                     attrs.toArray( new AttributeDescriptor[attrs.size()]),
                     values.toArray() );
-            OperationSupport.instance().execute( op, false, false );
+            if (runOperation) {
+                OperationSupport.instance().execute( op, false, false );
+            }
+            else {
+                op.execute( monitor, null );
+            }
 
             // update isDirt/isValid
             fieldChange( null );
@@ -563,7 +577,7 @@ public class FormEditor
             fieldChange( null );
         }
         catch (Exception e) {
-            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "Objekt konnte nicht gespeichert werden.", e );
+            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "Objekt konnte korrekt geladen werden.", e );
         }
     }
 
