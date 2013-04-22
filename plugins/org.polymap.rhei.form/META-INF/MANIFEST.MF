@@ -25,6 +25,7 @@ Export-Package: org.polymap.rhei,
  org.polymap.rhei.filter,
  org.polymap.rhei.form,
  org.polymap.rhei.form.json,
+ org.polymap.rhei.internal.form,
  org.polymap.rhei.model
 Bundle-ClassPath: .
 
