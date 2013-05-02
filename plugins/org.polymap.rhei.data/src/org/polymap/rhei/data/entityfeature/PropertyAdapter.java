@@ -18,6 +18,7 @@ package org.polymap.rhei.data.entityfeature;
 import java.util.Map;
 
 import org.geotools.feature.NameImpl;
+import org.geotools.feature.type.AttributeTypeImpl;
 import org.opengis.feature.Property;
 import org.opengis.feature.type.Name;
 import org.opengis.feature.type.PropertyDescriptor;
@@ -70,7 +71,7 @@ public class PropertyAdapter
     }
 
     public PropertyType getType() {
-        throw new RuntimeException( "not yet implemented." );
+        return new AttributeTypeImpl( getName(), (Class<?>)delegate.type(), false, false, null, null, null );
     }
 
     public PropertyDescriptor getDescriptor() {
