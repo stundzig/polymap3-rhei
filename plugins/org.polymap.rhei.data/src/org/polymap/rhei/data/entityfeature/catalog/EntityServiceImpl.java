@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2010, Polymap GmbH, and individual contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2013, Polymap GmbH. All rigths reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.data.entityfeature.catalog;
 
@@ -46,7 +43,6 @@ import org.polymap.rhei.data.entityfeature.EntitySourceProcessor;
  * the pipeline.
  * 
  * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
- * @version ($Revision$)
  */
 public abstract class EntityServiceImpl
         extends IService {

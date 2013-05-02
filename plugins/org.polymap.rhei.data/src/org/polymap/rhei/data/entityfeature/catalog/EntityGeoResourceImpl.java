@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.rhei.data.entityfeature.EntityProvider;
+import org.polymap.rhei.data.entityfeature.EntityProvider2;
 
 /**
  * 
@@ -87,8 +88,10 @@ public class EntityGeoResourceImpl
 //            return adaptee.cast( service.getDS().getFeatureSource( type ) );
 //        }
         if (adaptee.isAssignableFrom( SimpleFeatureType.class )) {
-            throw new RuntimeException( "not implemented, see source for more information." );
-//            return adaptee.cast( provider.getSchema() );
+            if (provider instanceof EntityProvider2) {
+                return adaptee.cast( ((EntityProvider2)provider).buildFeatureType() );                
+            }
+            log.warn( "EntityProvider does not support buildFeatureType(): " + provider );
         }
         if (adaptee.isAssignableFrom( EntityProvider.class )) {
             return adaptee.cast( provider );
