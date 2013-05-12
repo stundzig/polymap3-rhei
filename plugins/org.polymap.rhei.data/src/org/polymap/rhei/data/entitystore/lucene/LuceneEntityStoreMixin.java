@@ -182,6 +182,9 @@ public class LuceneEntityStoreMixin
             }
             throw new EntityTypeNotFoundException( typeName );
         }
+        catch (NoSuchEntityException e) {
+            throw e;
+        }
         catch (Exception e) {
             throw new EntityStoreException( e );
         }

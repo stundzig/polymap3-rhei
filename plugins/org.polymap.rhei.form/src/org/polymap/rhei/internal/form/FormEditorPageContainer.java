@@ -130,6 +130,7 @@ public class FormEditorPageContainer
     }
 
 
+    @Override
     public boolean isDirty() {
         if (page instanceof IFormEditorPage2) {
             if (((IFormEditorPage2)page).isDirty()) {
@@ -145,6 +146,7 @@ public class FormEditorPageContainer
     }
 
 
+    @Override
     public boolean isValid() {
         if (page instanceof IFormEditorPage2) {
             if (!((IFormEditorPage2)page).isValid()) {

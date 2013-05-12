@@ -1,7 +1,6 @@
 /*
  * polymap.org
- * Copyright 2011, Falko Bräutigam, and individual contributors as
- * indicated by the @authors tag.
+ * Copyright 2013, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -18,51 +17,95 @@ package org.polymap.rhei.data.entityfeature;
 import java.util.Map;
 
 import org.geotools.feature.NameImpl;
-import org.opengis.feature.Property;
+import org.geotools.feature.type.AttributeTypeImpl;
 import org.opengis.feature.type.Name;
 import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.feature.type.PropertyType;
 
+import org.qi4j.api.common.QualifiedName;
+import org.qi4j.api.entity.EntityComposite;
+import org.qi4j.api.property.Property;
+import org.qi4j.api.property.StateHolder;
+import org.qi4j.api.value.ValueBuilder;
+import org.qi4j.api.value.ValueComposite;
+
+import com.google.common.base.Joiner;
+
 /**
- * Provides a plain value as OGC property. Used by {@link IFormPageProvider}
- * instances to handle complex attributes.
+ * Adapter between a Qi4j {@link org.qi4j.api.property.Property} of a
+ * {@link ValueComposite} and an OGC property.
  * 
- * @author <a href="http://www.polymap.de">Falko Braeutigam</a>
+ * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  * @since 3.1
  */
-public class ValuePropertyAdapter<T>
-        implements Property {
+public class ValuePropertyAdapter
+        implements org.opengis.feature.Property {
 
-    private String          name;
+    private Property                delegate;
     
-    private T               value;
-    
+    private Property<ValueComposite> valueProperty;
 
-    public ValuePropertyAdapter( String name, T value ) {
-        this.name = name;
-        this.value = value;
+    private String                  prefix;
+    
+    private boolean                 readOnly;
+
+
+    /**
+     * 
+     * 
+     * @param delegate The property of a {@link ValueComposite} to delegate to.
+     * @param valueProperty The property of the {@link EntityComposite} that holds the {@link ValueComposite}.
+     */
+    public ValuePropertyAdapter( Property delegate, Property<? extends ValueComposite> valueProperty ) {
+        assert valueProperty != null && delegate != null;
+        this.valueProperty = (Property<ValueComposite>)valueProperty;
+        this.delegate = delegate;
     }
 
+
+    protected Property delegate() {
+        return delegate;
+    }
+
+    
     public Name getName() {
-        return new NameImpl( name );
+        return new NameImpl( Joiner.on( "_" ).skipNulls().join( prefix, delegate.qualifiedName().name() ) );
     }
 
+    
     public PropertyType getType() {
-        throw new RuntimeException( "not yet implemented." );
+        return new AttributeTypeImpl( getName(), (Class<?>)delegate.type(), false, false, null, null, null );
     }
 
+    
     public PropertyDescriptor getDescriptor() {
         // signal that we are a 'complex' property
         // see FormEditor#doSave() for implementation detail
         return null;
     }
 
+    
     public Object getValue() {
-        return value;
+        return delegate.get();
     }
 
-    public void setValue( Object value ) {
-        this.value = (T)value;
+    
+    public void setValue( final Object value ) {
+        if (!readOnly) {
+            ValueComposite oldValue = valueProperty.get();
+            ValueBuilder<ValueComposite> vbuilder = oldValue.buildWith();
+            final ValueComposite newValue = vbuilder.prototype();
+            
+            // copy/set properties
+            oldValue.state().visitProperties( new StateHolder.StateVisitor() {
+                public void visitProperty( QualifiedName name, Object propValue ) {
+                    newValue.state().getProperty( name ).set( 
+                            name.equals( delegate.qualifiedName() ) ? value : propValue );
+                }
+            });
+            // set value property
+            valueProperty.set( vbuilder.newInstance() );
+        }
     }
 
     public Map<Object, Object> getUserData() {

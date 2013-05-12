@@ -45,7 +45,8 @@ public class StringFormField
     public enum Style {
         ALIGN_LEFT      ( SWT.LEFT ),
         ALIGN_CENTER    ( SWT.CENTER ),
-        ALIGN_RIGHT     ( SWT.RIGHT );
+        ALIGN_RIGHT     ( SWT.RIGHT ),
+        PASSWORD        ( SWT.PASSWORD );
         
         public int constant = -1;
         Style( int constant ) {

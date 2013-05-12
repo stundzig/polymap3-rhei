@@ -115,7 +115,16 @@ public interface IFormEditorPageSite {
      * @return True if the page has unsaved changes.
      */
     public boolean isDirty();
+
     
+    /**
+     * True if all fields of the page have valid state. If the page is an
+     * {@link IFormEditorPage2} than the page have to have valid state too.
+     * 
+     * @return True if all unsaved changes of the page are valid.
+     */
+    public boolean isValid();
+
     public void clearFields();
 
 }
