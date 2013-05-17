@@ -201,8 +201,9 @@ public class UploadFormField
                     // check for images
                     String contentType = item.getContentType();
                     if (!("image/jpeg".equalsIgnoreCase( contentType )
-                            || "image/png".equalsIgnoreCase( contentType ) || "image/gif"
-                            .equalsIgnoreCase( contentType ))) {
+                            || "image/png".equalsIgnoreCase( contentType ) 
+                            || "image/gif".equalsIgnoreCase( contentType ) 
+                            || "image/pjpeg".equalsIgnoreCase( contentType ))) {
                         new MessageDialog(
                                 shell,
                                 "Fehler beim Upload der Daten",
