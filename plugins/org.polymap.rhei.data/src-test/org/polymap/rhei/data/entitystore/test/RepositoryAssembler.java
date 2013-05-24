@@ -19,11 +19,14 @@ import org.qi4j.api.entity.EntityComposite;
 import org.qi4j.api.structure.Application;
 import org.qi4j.api.structure.Module;
 import org.qi4j.api.unitofwork.UnitOfWorkFactory;
+import org.qi4j.api.value.ValueComposite;
 import org.qi4j.bootstrap.ApplicationAssembly;
 import org.qi4j.bootstrap.AssemblyException;
 import org.qi4j.bootstrap.LayerAssembly;
 import org.qi4j.bootstrap.ModuleAssembly;
 
+import org.polymap.core.qi4j.QiModule;
+import org.polymap.core.qi4j.QiModuleAssembler;
 import org.polymap.core.qi4j.idgen.HRIdentityGeneratorService;
 
 import org.polymap.rhei.data.entitystore.lucene.LuceneEntityStoreInfo;
@@ -35,22 +38,44 @@ import org.polymap.rhei.data.entitystore.lucene.LuceneEntityStoreService;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class RepositoryAssembler {
+public class RepositoryAssembler
+        extends QiModuleAssembler {
 
-    Application                 app;
+    Application                                app;
 
-    UnitOfWorkFactory           uowf;
+    UnitOfWorkFactory                          uowf;
 
-    Module                      module;
+    Module                                     module;
 
     private Class<? extends EntityComposite>[] entities;
+
+    private Class<? extends ValueComposite>[]  values;    
     
 
     public RepositoryAssembler( Class<? extends EntityComposite>... entities ) {
         this.entities = entities;
     }
 
+    public void setValues( Class<? extends ValueComposite>... values ) {
+        this.values = values;
+    }
 
+    @Override
+    public Module getModule() {
+        return module;
+    }
+
+    @Override
+    public void createInitData() throws Exception {
+    }
+
+    @Override
+    public QiModule newModule() {
+        return new QiModule( this ) {
+        };
+    }
+
+    
     protected void setApp( Application app ) {
         this.app = app;
         this.module = app.findModule( "application-layer", "test-module" );
@@ -64,16 +89,9 @@ public class RepositoryAssembler {
         LayerAssembly domainLayer = _app.layerAssembly( "application-layer" );
         ModuleAssembly domainModule = domainLayer.moduleAssembly( "test-module" );
         domainModule.addEntities( entities );
-//        domainModule.addValues(
-//                AktivitaetValue.class,
-//                BiotoptypValue.class,
-//                PflanzeValue.class,
-//                PilzValue.class,
-//                TierValue.class
-//        );
-
-        // persistence: workspace/Lucene
-//        File moduleRoot = new File( "/home/falko/servers/workspace-biotop/data/org.polymap.biotop/" );
+        if (values != null) {
+            domainModule.addValues( values );
+        }
 
         domainModule.addServices( LuceneEntityStoreService.class )
                 .setMetaInfo( new LuceneEntityStoreInfo() )
