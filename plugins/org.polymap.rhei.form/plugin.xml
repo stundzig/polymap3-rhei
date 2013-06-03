@@ -158,6 +158,7 @@
       <filterProvider
             class="org.polymap.rhei.navigator.filter.StandardFilterProvider"
             id="org.polymap.rhei.form.StandardFilterProvider"
+            isStandard="true"
             name="StandardFilterProvider">
       </filterProvider>
    </extension>

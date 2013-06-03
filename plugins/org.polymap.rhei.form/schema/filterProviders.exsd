@@ -73,6 +73,13 @@
                </appinfo>
             </annotation>
          </attribute>
+         <attribute name="isStandard" type="boolean">
+            <annotation>
+               <documentation>
+                  Standard filters are not relatied to any perticual domain model. They are used only if no domain specific filter is found.
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 

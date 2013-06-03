@@ -46,22 +46,29 @@ public class FilterFactory {
     // instance *******************************************
     
     public List<IFilter> filtersForLayer( ILayer layer ) {
-        List<IFilter> result = new ArrayList();
+        List<IFilter> filters = new ArrayList();
+        List<IFilter> standardFilters = new ArrayList();
         for (FilterProviderExtension ext : FilterProviderExtension.allExtensions()) {
             try {
                 // FIXME IFilter is stateful but currently the same IFilter might be subject
                 // to subsequent openDialog/View... request! Creating IFilter instances with
                 // every getChildren() here might help but does not cure the problem
-                List<? extends IFilter> filters = ext.newFilterProvider().addFilters( layer );
-                if (filters != null) {
-                    result.addAll( filters );
+                List<? extends IFilter> candidates = ext.newFilterProvider().addFilters( layer );
+                if (candidates == null) {
+                    continue;
+                }
+                else if (ext.isStandard()) {
+                    standardFilters.addAll( candidates );
+                }
+                else {
+                    filters.addAll( candidates );
                 }
             }
             catch (Exception e) {
                 PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, null, e.getLocalizedMessage(), e );                
             }
         }
-        return Collections.unmodifiableList( result );
+        return Collections.unmodifiableList( !filters.isEmpty() ? filters : standardFilters );
     }
 
     

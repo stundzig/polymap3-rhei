@@ -16,9 +16,7 @@
 package org.polymap.rhei.field;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -33,11 +31,8 @@ import com.google.common.primitives.Ints;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
@@ -56,16 +51,15 @@ import org.polymap.rhei.model.ConstantWithSynonyms;
 public class SelectlistFormField
         implements IFormField {
 
-    private static Log                   log           = LogFactory
-                                                               .getLog( SelectlistFormField.class );
+    private static Log log = LogFactory.getLog( SelectlistFormField.class );
 
-    public static final int              MULTIPLE      = 1;
+    public static final int              MULTIPLE = 1;
 
     private IFormFieldSite               site;
 
     private org.eclipse.swt.widgets.List list;
 
-    private boolean                      isMultiple    = false;
+    private boolean                      isMultiple;
 
     private LabelProvider                labelProvider = new LabelProvider();
 
