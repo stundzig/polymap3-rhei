@@ -24,6 +24,8 @@ import org.opengis.feature.type.PropertyType;
 
 import org.qi4j.api.entity.association.Association;
 
+import com.google.common.base.Joiner;
+
 /**
  * Provides an {@link Association} as OGC property. 
  * 
@@ -33,18 +35,22 @@ import org.qi4j.api.entity.association.Association;
 public class AssociationAdapter<T>
         implements Property {
 
-    private String          name;
+    private String          prefix;
 
     private Association<T>  association;
     
 
-    public AssociationAdapter( String name, Association<T> association ) {
-        this.name = name;
+    public AssociationAdapter( Association<T> association ) {
+        this.association = association;
+    }
+
+    public AssociationAdapter( String prefix, Association<T> association ) {
+        this.prefix = prefix;
         this.association = association;
     }
 
     public Name getName() {
-        return new NameImpl( name );
+        return new NameImpl( Joiner.on( "_" ).skipNulls().join( prefix, association.qualifiedName().name() ) );
     }
 
     public PropertyType getType() {

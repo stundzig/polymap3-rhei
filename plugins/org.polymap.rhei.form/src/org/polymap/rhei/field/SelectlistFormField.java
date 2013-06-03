@@ -1,6 +1,5 @@
 /*
- * polymap.org Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * polymap.org Copyright 2013, Polymap GmbH. All rights reserved.
  * 
  * This is free software; you can redistribute it and/or modify it under the terms of
  * the GNU Lesser General Public License as published by the Free Software
@@ -10,8 +9,6 @@
  * This software is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
- * 
- * $Id: $
  */
 package org.polymap.rhei.field;
 
@@ -33,6 +30,8 @@ import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
@@ -46,7 +45,6 @@ import org.polymap.rhei.model.ConstantWithSynonyms;
  * By default the {@link #setMultiple(boolean)} is set to false.
  * 
  * @author <a href="http://www.polymap.de">Steffen Stundzig</a>
- * @version ($Revision$)
  */
 public class SelectlistFormField
         implements IFormField {
@@ -84,14 +82,10 @@ public class SelectlistFormField
 
 
     /**
-     * A additional {@link LabelProvider} allows to transform the labels in the
-     * dropdown of the list of this selectlist.
+     * 
+     * 
+     * @param flags {@link #MULTIPLE} or empty for single selection mode.
      */
-    public void setLabelProvider( LabelProvider labelProvider ) {
-        this.labelProvider = labelProvider;
-    }
-
-
     public SelectlistFormField( int... flags ) {
         this.values = new DefaultValueProvider();
         if (flags.length > 0) {
@@ -105,6 +99,7 @@ public class SelectlistFormField
      * the property.
      * 
      * @param values
+     * @param flags {@link #MULTIPLE} or empty for single selection mode.
      */
     public SelectlistFormField( Iterable<String> values, int... flags ) {
         this( flags );
@@ -119,6 +114,7 @@ public class SelectlistFormField
      * the property.
      * 
      * @param values
+     * @param flags {@link #MULTIPLE} or empty for single selection mode.
      */
     public SelectlistFormField( String[] values, int... flags ) {
         this( flags );
@@ -163,19 +159,39 @@ public class SelectlistFormField
 
 
     /**
+     * A additional {@link LabelProvider} allows to transform the labels in the
+     * dropdown of the list of this selectlist.
+     * 
+     * @return this
+     */
+    public SelectlistFormField setLabelProvider( LabelProvider labelProvider ) {
+        this.labelProvider = labelProvider;
+        return this;
+    }
+
+
+    /**
      * Sets the selection mode of the list.
      * <p>
      * This method can be called only while initializing before the widget has been
      * created.
+     * @return this
      */
-    public void setIsMultiple( boolean value ) {
+    public SelectlistFormField setIsMultiple( boolean value ) {
         this.isMultiple = value;
+        return this;
     }
 
 
     public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {
         int comboStyle = isMultiple ? SWT.MULTI : SWT.SINGLE;
-        list = toolkit.createList( parent, comboStyle | SWT.BORDER | SWT.V_SCROLL);
+        list = toolkit.createList( parent, comboStyle | SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
+        
+        FormData layoutData = new FormData();
+        // layoutData.height = 75;
+        layoutData.top = new FormAttachment( 0, 0 );
+        layoutData.bottom = new FormAttachment( 100, -3 );
+        list.setLayoutData( layoutData );
         
         // add values
         fillList();

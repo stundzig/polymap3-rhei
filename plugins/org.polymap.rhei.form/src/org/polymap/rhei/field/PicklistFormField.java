@@ -1,7 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2010, Falko Bräutigam, and other contributors as indicated
- * by the @authors tag.
+ * Copyright 2010-2013, Falko Bräutigam. All rigths reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,8 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- *
- * $Id: $
  */
 package org.polymap.rhei.field;
 
@@ -50,15 +47,16 @@ import org.polymap.rhei.model.ConstantWithSynonyms;
  * {@link #setTextEditable(boolean)} is set to false.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
- * @version ($Revision$)
  */
 public class PicklistFormField
         implements IFormField {
 
     private static Log log = LogFactory.getLog( PicklistFormField.class );
 
+    /** */
     public static final int         FORCE_MATCH = 1;
     
+    /** */
     public static final int         TEXT_EDITABLE = 2;
     
     private IFormFieldSite          site;
@@ -75,7 +73,7 @@ public class PicklistFormField
      * Maps display value into associated return code (when selected). The TreeMap
      * sorts tha keys alphabetically.
      */
-    private final ValueProvider values;
+    private final ValueProvider     values;
     
     private Object                  loadedValue;
     
@@ -100,6 +98,11 @@ public class PicklistFormField
     }
 
     
+    /**
+     * 
+     * 
+     * @param flags {@link #TEXT_EDITABLE} or {@link #FORCE_MATCH}, or empty to use default settings. 
+     */
     public PicklistFormField( int... flags ) {
         this.values = new DefaultValueProvider();
         if (flags.length > 0) {
