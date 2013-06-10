@@ -425,28 +425,31 @@ public class EntitySourceProcessor
 
     protected Set<FeatureId> addFeatures( Collection<Feature> features )
     throws Exception {
-        final EntityType type = entityProvider.getEntityType();
+        final EntityType entityType = entityProvider.getEntityType();
 
         FidSet result = new FidSet();
         for (final Feature feature : features) {
 
             Entity entity = entityProvider.newEntity( new EntityCreator<Entity>() {
                 @Override
-                public void create( Entity instance ) throws Exception{
+                public void create( Entity instance ) throws Exception {
                     for (Property featureProp : feature.getProperties()) {
-                        // default mapping
                         String propName = featureProp.getName().getLocalPart();
-                        EntityType.Property prop = type.getProperty( propName );
                         Object value = featureProp.getValue();
-                        // check values, do not overwrite default values
-                        if (prop != null && value != null && standardAttributes.contains( propName )) {
-                            prop.setValue( instance, value );
-                        }
                         
-                        // EntityProvider2
-                        if (entityProvider instanceof EntityProvider2) {
-                            ((EntityProvider2)entityProvider).modifyFeature( instance, propName, value );
-                        }
+                        modifyProperty( instance, entityType, propName, value );
+
+//                        EntityType.Property prop = type.getProperty( propName );
+//                    
+//                        // check values, do not overwrite default values
+//                        if (prop != null && value != null && standardAttributes.contains( propName )) {
+//                            prop.setValue( instance, value );
+//                        }
+//                        
+//                        // EntityProvider2
+//                        if (entityProvider instanceof EntityProvider2) {
+//                            ((EntityProvider2)entityProvider).modifyFeature( instance, propName, value );
+//                        }
                     }
                 }
             });
@@ -496,30 +499,39 @@ public class EntitySourceProcessor
         EntityType entityType = entityProvider.getEntityType();
         for (Entity entity : entities) {
             for (int i=0; i<type.length; i++) {
-                try {
-                    String propName = type[i].getLocalName();
-                    log.debug( "    modifying: prop=" + propName + ", value=" + value[i] + ", entity=" + entity );
-                    if (entityProvider instanceof EntityProvider2) {
-                        ((EntityProvider2)entityProvider).modifyFeature( entity, propName, value[i] );
-                    }
-                    else if (entityProvider instanceof EntityProvider3) {
-                        boolean applied = ((EntityProvider3)entityProvider).modifyFeature( entity, propName, value[i] );
-                        if (!applied && standardAttributes.contains( propName )) {
-                            entityType.getProperty( propName ).setValue( entity, value[i] );                            
-                        }
-                    }
-                    else {
-                        entityType.getProperty( propName ).setValue( entity, value[i] );
-                    }
-                }
-                catch (Exception e) {
-                    throw new IOException( "Fehler beim Ändern des Objektes: " + entity, e );
-                }
+                String propName = type[i].getLocalName();
+                modifyProperty( entity, entityType, propName, value[i] );
             }
         }
         return result;
     }
 
+    
+    private void modifyProperty( Entity entity, EntityType entityType, String propName, Object value ) 
+            throws IOException {
+        try {
+            log.debug( "    modifying: prop=" + propName + ", value=" + value + ", entity=" + entity );
+            // EntityProvider2
+            if (entityProvider instanceof EntityProvider2) {
+                ((EntityProvider2)entityProvider).modifyFeature( entity, propName, value );
+            }
+            // EntityProvider3
+            else if (entityProvider instanceof EntityProvider3) {
+                boolean applied = ((EntityProvider3)entityProvider).modifyFeature( entity, propName, value );
+                if (!applied && standardAttributes.contains( propName )) {
+                    entityType.getProperty( propName ).setValue( entity, value );
+                }
+            }
+            // default
+            else {
+                entityType.getProperty( propName ).setValue( entity, value );
+            }
+        }
+        catch (Exception e) {
+            throw new IOException( "Fehler beim Ändern des Objektes: " + entity, e );
+        }
+    }
+    
     
     // feature events *************************************
     
