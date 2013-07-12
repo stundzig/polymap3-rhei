@@ -17,6 +17,8 @@ package org.polymap.rhei.data.entityfeature;
 
 import java.util.Map;
 
+import java.lang.reflect.Type;
+
 import org.geotools.feature.NameImpl;
 import org.geotools.feature.type.AttributeTypeImpl;
 import org.opengis.feature.Property;
@@ -86,6 +88,13 @@ public class PropertyAdapter
 
     public void setValue( Object value ) {
         if (!readOnly) {
+            // check type
+            Type propType = delegate.type();
+            if (propType instanceof Class 
+                    && value != null 
+                    && !((Class)propType).isAssignableFrom( value.getClass() )) {
+                throw new ClassCastException( "Wrong value for Property of type '" + propType + "': " + value.getClass() );
+            }
             delegate.set( value );
         }
     }
