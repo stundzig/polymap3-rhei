@@ -4,10 +4,26 @@
    <extension
          point="org.polymap.rhei.form.pageProviders">
       <pageProvider
-            class="org.polymap.rhei.script.form.ScriptFormPageProvider"
+            class="org.polymap.rhei.script.extensions.ScriptFormPageProvider"
             id="org.polymap.rhei.script.ScriptFormPageProvider"
             name="ScriptFormPageProvider">
       </pageProvider>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectives">
+      <perspective
+            class="org.polymap.rhei.script.extensions.ScriptPerspectiveFactory"
+            id="org.polymap.rhei.script.perspective"
+            name="Scripted">
+      </perspective>
+   </extension>
+   <extension
+         point="org.eclipse.rap.ui.entrypoint">
+      <entrypoint
+            class="org.polymap.rhei.script.extensions.ScriptWorkbench"
+            id="org.polymap.rhei.script.entrypoint"
+            parameter="script">
+      </entrypoint>
    </extension>
 
 </plugin>
