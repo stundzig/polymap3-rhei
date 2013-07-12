@@ -329,7 +329,11 @@ public class FormEditorPageContainer
         ((FormEditor)getEditor()).doLoad( new NullProgressMonitor() );
     }
 
-
+    public void submitEditor()
+    throws Exception {
+        ((FormEditor)getEditor()).doSave( new NullProgressMonitor() );
+    }
+    
     public void clearFields() {
         dispose();
         

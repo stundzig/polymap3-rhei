@@ -32,6 +32,7 @@ import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+
 import org.eclipse.jface.action.Action;
 
 import org.eclipse.ui.forms.widgets.Section;
@@ -42,6 +43,7 @@ import org.polymap.core.runtime.Polymap;
 import org.polymap.rhei.field.CheckboxFormField;
 import org.polymap.rhei.field.DateTimeFormField;
 import org.polymap.rhei.field.IFormField;
+import org.polymap.rhei.field.IFormFieldLabel;
 import org.polymap.rhei.field.IFormFieldValidator;
 import org.polymap.rhei.field.NumberValidator;
 import org.polymap.rhei.field.StringFormField;
@@ -86,6 +88,8 @@ public abstract class DefaultFormEditorPage
     protected FeatureStore          fs;
     
     protected IFormEditorPageSite   pageSite;
+
+    protected Control               lastLayoutElm;
     
     
     public DefaultFormEditorPage( String id, String title, Feature feature, FeatureStore fs ) {
@@ -167,36 +171,39 @@ public abstract class DefaultFormEditorPage
 
 
     protected Control applyLayout( Control field ) {
-            // RowLayout
-            if (field.getParent().getLayout() instanceof RowLayout) {
-                // width defines the minimum width of the entire form
-                // before horiz. scrollbar starts to appear
-                RowData layoutData = new RowData( 300, SWT.DEFAULT );
-                field.setLayoutData( layoutData );
-            }
-            
-            // FormLayout
-            else if (field.getParent().getLayout() instanceof FormLayout) {
-                // width defines the minimum width of the entire form
-                // before horiz. scrollbar starts to appear
-              SimpleFormData formData = new SimpleFormData().width( 40 ).left( 0, 3 ).right( 100, -3 );
-              field.setLayoutData( formData.create() );
-    
-    //        FormData layoutData = new FormData( 40, SWT.DEFAULT );
-    //        layoutData.left = new FormAttachment( 0, DEFAULT_FIELD_SPACING_H );
-    //        layoutData.right = new FormAttachment( 100, -DEFAULT_FIELD_SPACING_H );
-    //        layoutData.top = lastLayoutElm != null
-    //                ? new FormAttachment( lastLayoutElm, DEFAULT_FIELD_SPACING_V )
-    //                : new FormAttachment( 0 );
-    //        field.setLayoutData( layoutData );
-    //
-    //        lastLayoutElm = field;
-            }
-            else {
-                log.warn( "Unknown layout type: " + field.getParent().getLayout() );
-            }
-            return field;
+        // RowLayout
+        if (field.getParent().getLayout() instanceof RowLayout) {
+            // width defines the minimum width of the entire form
+            // before horiz. scrollbar starts to appear
+            RowData layoutData = new RowData( 300, SWT.DEFAULT );
+            field.setLayoutData( layoutData );
         }
+
+        // FormLayout
+        else if (field.getParent().getLayout() instanceof FormLayout) {
+            // width defines the minimum width of the entire form
+            // before horiz. scrollbar starts to appear
+            SimpleFormData formData = new SimpleFormData().width( 40 ).left( 0, 3 ).right( 100, -3 ).top( 0 );
+            if (lastLayoutElm != null) {
+                formData.top( lastLayoutElm, 3 );
+            }
+            field.setLayoutData( formData.create() );
+
+            //        FormData layoutData = new FormData( 40, SWT.DEFAULT );
+            //        layoutData.left = new FormAttachment( 0, DEFAULT_FIELD_SPACING_H );
+            //        layoutData.right = new FormAttachment( 100, -DEFAULT_FIELD_SPACING_H );
+            //        layoutData.top = lastLayoutElm != null
+            //                ? new FormAttachment( lastLayoutElm, DEFAULT_FIELD_SPACING_V )
+            //                : new FormAttachment( 0 );
+            //        field.setLayoutData( layoutData );
+            //
+            lastLayoutElm = field;
+        }
+        else {
+            log.warn( "Unknown layout type: " + field.getParent().getLayout() );
+        }
+        return field;
+    }
 
     /**
      * 
@@ -238,7 +245,7 @@ public abstract class DefaultFormEditorPage
         private boolean             enabled = true;
 
         private Object              layoutData;
-
+        
         
         public FormFieldBuilder( String propName ) {
             this.propName = propName;
@@ -250,6 +257,11 @@ public abstract class DefaultFormEditorPage
             this( propName );
             this.parent = parent;
         }
+
+//        public FormFieldBuilder setFocus( boolean focus ) {
+//            this.focus = focus;
+//            return this;
+//        }
         
         public FormFieldBuilder setParent( Composite parent ) {
             this.parent = parent instanceof Section 
@@ -338,6 +350,9 @@ public abstract class DefaultFormEditorPage
             // tooltip
             if (tooltip != null) {
                 result.setToolTipText( tooltip );
+            }
+            else if (!label.equals( IFormFieldLabel.NO_LABEL )) {
+                result.setToolTipText( label );                
             }
             // editable
             if (!enabled) {

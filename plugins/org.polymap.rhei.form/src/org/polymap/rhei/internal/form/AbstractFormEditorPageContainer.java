@@ -222,6 +222,12 @@ public abstract class AbstractFormEditorPageContainer
     }
 
     
+    public void submitEditor()
+    throws Exception {
+        doSubmit( new NullProgressMonitor() );
+    }
+
+    
     public void clearFields() {
         throw new RuntimeException( "not yet implemented." );
 //        dispose();
