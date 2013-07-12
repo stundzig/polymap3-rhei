@@ -22,7 +22,11 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+
+import org.polymap.rhei.ide.RheiIdePlugin;
 
 /**
  * 
@@ -43,14 +47,15 @@ public class ScriptProjectLabelProvider
             extends LabelProvider {
 
         public Image getImage( Object elm ) {
-//            if (elm instanceof IResource) {
-//                //            LayerIconImageDescriptor imageDescr = new LayerIconImageDescriptor();
-//                //            Image result = RheiPlugin.getDefault().imageForDescriptor( imageDescr, "layerIcon" );
-//                Image result = RheiIdePlugin.getDefault().imageForName( "icons/obj16/layer_disabled_obj.gif" );
+            if (elm instanceof IContainer) {
                 return PlatformUI.getWorkbench().getSharedImages().getImage( ISharedImages.IMG_OBJ_FOLDER );
-//                return result;
-//            }
-//            return null;
+            }
+            else if (elm instanceof IFile) {
+                return RheiIdePlugin.getDefault().imageForName( "icons/obj16/file_obj.gif" );
+            }
+            else {
+                return null;
+            }
         }
 
 
@@ -64,4 +69,5 @@ public class ScriptProjectLabelProvider
         }
 
     }
+    
 }

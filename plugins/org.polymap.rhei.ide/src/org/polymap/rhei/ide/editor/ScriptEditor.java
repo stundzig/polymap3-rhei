@@ -211,12 +211,14 @@ public class ScriptEditor
             IMarker[] newMarkers = getEditorInput().getFile().findMarkers( null, true, IResource.DEPTH_ZERO );
             for (IMarker marker : newMarkers) {
                 Image image = null;
-                switch (marker.getAttribute( IMarker.SEVERITY, IMarker.SEVERITY_ERROR )) {
+                switch (marker.getAttribute( IMarker.SEVERITY, IMarker.SEVERITY_WARNING )) {
                     case IMarker.SEVERITY_ERROR: 
                         image = ERROR; break;
                     case IMarker.SEVERITY_WARNING: 
                         image = WARN; break;
                     case IMarker.SEVERITY_INFO: 
+                        image = INFO; break;
+                    default:
                         image = INFO; break;
                 }
                 editor.lineMarkers().put( new LineMarker( String.valueOf( marker.getId() ) )

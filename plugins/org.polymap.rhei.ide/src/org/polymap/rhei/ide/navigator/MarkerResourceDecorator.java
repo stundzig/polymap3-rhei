@@ -28,6 +28,8 @@ import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 
+import org.eclipse.ui.PlatformUI;
+
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
@@ -100,8 +102,9 @@ public class MarkerResourceDecorator
             if (decorated.contains( delta.getResource() )) {
                 display.asyncExec( new Runnable() {
                     public void run() {
-                        fireLabelProviderChanged( new LabelProviderChangedEvent( 
-                                MarkerResourceDecorator.this ) );
+                        if (!PlatformUI.getWorkbench().isClosing()) {
+                            fireLabelProviderChanged( new LabelProviderChangedEvent( MarkerResourceDecorator.this ) );
+                        }
                     }
                 });
                 break;

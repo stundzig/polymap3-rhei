@@ -78,9 +78,10 @@ class CompletionJob
         String text = getText();
         int pos = getPos();
         
-        if (Character.isWhitespace( text.charAt( pos ) )
-                && pos >= 0
-                && !Character.isWhitespace( text.charAt( pos-1 ) )) {
+        if (pos < text.length() && pos >= 0 
+                && !Character.isJavaIdentifierPart( text.charAt( pos ) )
+                && (Character.isJavaIdentifierPart( text.charAt( pos-1 ) )
+                        || text.charAt( pos-1 ) == '.')) {
             
             // call all providers
             List<ICompletionProvider> providers = new ArrayList( editor.completionProviders );

@@ -149,7 +149,7 @@ public class RheiIdePlugin
 //                        for (IClasspathEntry entry : javaProject.getResolvedClasspath( false )) {
 //                            log.info( "entry: " + entry.getPath() + ", src: " + entry.getSourceAttachmentPath() );
 //                        }
-
+                        log.info( "Done refreshing Java project." );
                         return Status.OK_STATUS;
                     }
                     catch (Exception e) {
@@ -157,7 +157,8 @@ public class RheiIdePlugin
                         return Status.OK_STATUS;
                     }
                 }
-            }.schedule( 3000 );
+            // after anything else
+            }.schedule( 12000 );
 
             
 //            IFolder srcFolder = project.getFolder( "src" );

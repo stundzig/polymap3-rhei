@@ -39,10 +39,18 @@
       <editor
             class="org.polymap.rhei.ide.editor.ScriptEditor"
             default="false"
-            extensions="html, classpath"
+            extensions="classpath"
             icon="icons/eview16/script_editor.gif"
             id="org.polymap.rhei.ide.ScriptEditor"
             name="Script">
+      </editor>
+      <editor
+            class="org.polymap.rhei.ide.editor.ScriptEditor"
+            default="false"
+            extensions="html"
+            icon="icons/obj16/file_obj.gif"
+            id="org.polymap.rhei.ide.HtmlEditor"
+            name="HTML">
       </editor>
       <editor
             class="org.polymap.rhei.ide.java.JavaEditor"
@@ -185,6 +193,34 @@
                style="push">
          </action>
       </objectContribution>
+      <objectContribution
+            adaptable="false"
+            id="org.polymap.rhei.ide.newFileContribution"
+            objectClass="org.eclipse.core.resources.IFolder">
+         <action
+               class="org.polymap.rhei.ide.navigator.NewFileAction"
+               icon="icons/elcl16/add_co.gif"
+               id="org.polymap.rhei.ide.action1"
+               label="New file..."
+               tooltip="Create a new source file">
+         </action>
+      </objectContribution>
+   </extension>
+   <extension
+         point="org.eclipse.ui.viewActions">
+      <viewContribution
+            id="org.polymap.rhei.ide.NavigatorContribution1"
+            targetID="org.polymap.rhei.ProjectNavigator">
+         <action
+               class="org.polymap.rhei.ide.navigator.NewFileAction"
+               icon="icons/elcl16/add_co.gif"
+               id="org.polymap.rhei.ide.NewFileAction"
+               label="New file"
+               style="push"
+               toolbarPath="actions"
+               tooltip="Create a new source file">
+         </action>
+      </viewContribution>
    </extension>
 
 </plugin>
