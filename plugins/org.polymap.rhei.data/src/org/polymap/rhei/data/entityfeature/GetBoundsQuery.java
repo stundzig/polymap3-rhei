@@ -39,8 +39,7 @@ public class GetBoundsQuery
 
     @Override
     public boolean eval( Object target ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
+        return true;
     }
 
     @Override

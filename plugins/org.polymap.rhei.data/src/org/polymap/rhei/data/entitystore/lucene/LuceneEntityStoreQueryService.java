@@ -246,7 +246,7 @@ public interface LuceneEntityStoreQueryService
                 resultSet = store.find( recordQuery );
                 EntityReference minY = EntityReference.parseEntityReference( (String)resultSet.get( 0 ).id() );
 
-                // MaxX
+                // MaxY
                 fieldName = geomName+GeometryValueCoder.FIELD_MAXY;
                 recordQuery.sort( fieldName, RecordQuery.DESC, Double.class );
                 resultSet = store.find( recordQuery );
