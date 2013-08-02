@@ -57,7 +57,19 @@ public class ValuePropertyAdapter
      * @param valueProperty The property of the {@link EntityComposite} that holds the {@link ValueComposite}.
      */
     public ValuePropertyAdapter( Property delegate, Property<? extends ValueComposite> valueProperty ) {
+        this( null, delegate, valueProperty );
+    }
+
+
+    /**
+     * 
+     * @param prefix
+     * @param delegate The property of a {@link ValueComposite} to delegate to.
+     * @param valueProperty The property of the {@link EntityComposite} that holds the {@link ValueComposite}.
+     */
+    public ValuePropertyAdapter( String prefix, Property delegate, Property<? extends ValueComposite> valueProperty ) {
         assert valueProperty != null && delegate != null;
+        this.prefix = prefix;
         this.valueProperty = (Property<ValueComposite>)valueProperty;
         this.delegate = delegate;
     }
@@ -69,7 +81,7 @@ public class ValuePropertyAdapter
 
     
     public Name getName() {
-        return new NameImpl( Joiner.on( "_" ).skipNulls().join( prefix, delegate.qualifiedName().name() ) );
+        return new NameImpl( Joiner.on( "" ).skipNulls().join( prefix, delegate.qualifiedName().name() ) );
     }
 
     
