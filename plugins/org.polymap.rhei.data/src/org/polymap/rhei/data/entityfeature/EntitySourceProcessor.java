@@ -151,7 +151,10 @@ public class EntitySourceProcessor
         try {
             // init schema
             layer = (ILayer)props.get( "layer" );
-            EntityGeoResourceImpl geores = (EntityGeoResourceImpl)layer.getGeoResource();
+            EntityGeoResourceImpl geores = layer != null
+                    ? (EntityGeoResourceImpl)layer.getGeoResource()
+                    : (EntityGeoResourceImpl)props.get( "geores" );
+            assert geores != null : "No layer and no geores in properties of the processor.";
             entityProvider = geores.resolve( EntityProvider.class, null );
             filterConverter = new EntityQueryBuilder( entityProvider.getEntityType() );
 
@@ -161,7 +164,6 @@ public class EntitySourceProcessor
             }
             // build standard schema
             else {
-                log.debug( "Building schema for layer: " + layer.getLabel() );
                 EntityType entityType = entityProvider.getEntityType();
 
                 SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
@@ -547,8 +549,10 @@ public class EntitySourceProcessor
      * @param eventType
      */
     private void fireFeatureChangeEvent( Set<FeatureId> fids, FeatureChangeEvent.Type eventType ) {
-        FeatureChangeEvent ev = new FeatureChangeEvent( layer, eventType, fids );
-        EventManager.instance().publish( ev );
+        if (layer != null) {
+            FeatureChangeEvent ev = new FeatureChangeEvent( layer, eventType, fids );
+            EventManager.instance().publish( ev );
+        }
     }
 
     

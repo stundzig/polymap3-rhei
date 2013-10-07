@@ -386,10 +386,10 @@ public abstract class DefaultFormEditorPage
             else if (!ignoreCase && typeName.contains( name )) {
                 return true;
             }
-            else if (considerNameSpace && ignoreCase && ns.toLowerCase().contains( name )) {
+            else if (considerNameSpace && ignoreCase && ns != null && ns.toLowerCase().contains( name )) {
                 return true;
             }
-            else if (considerNameSpace && !ignoreCase && ns.contains( name )) {
+            else if (considerNameSpace && !ignoreCase && ns != null && ns.contains( name )) {
                 return true;
             }
         }

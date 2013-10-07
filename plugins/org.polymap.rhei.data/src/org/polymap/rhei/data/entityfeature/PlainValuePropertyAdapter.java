@@ -36,7 +36,7 @@ public class PlainValuePropertyAdapter<T>
     private String          name;
     
     private T               value;
-    
+
 
     public PlainValuePropertyAdapter( String name, T value ) {
         this.name = name;

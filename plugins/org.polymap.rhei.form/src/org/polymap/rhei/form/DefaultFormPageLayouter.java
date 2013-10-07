@@ -23,11 +23,13 @@ import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Layout;
 
 /**
  * Provides a default layout for classes that implement {@link IFormEditorPage}.
- *
+ * 
+ * @deprecated I don't like this anymore. Use {@link DefaultFormEditorPage.FormFieldBuilder} instead.
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  * @since 1.0
  */
@@ -39,7 +41,7 @@ public class DefaultFormPageLayouter {
     public static final int         DEFAULT_FIELD_SPACING_V = 1;
     public static final int         DEFAULT_SECTION_SPACING = 6;
 
-    private Composite               lastLayoutElm = null;
+    private Control                 lastLayoutElm = null;
 
 
     public Layout newLayout() {
@@ -58,7 +60,7 @@ public class DefaultFormPageLayouter {
         return field;
     }
 
-    public Composite setFieldLayoutData( Composite field ) {
+    public <T extends Control> T setFieldLayoutData( T field ) {
         assert field.getParent().getLayout() instanceof FormLayout;
 
         // defines the minimum width of the entire form before horiz. scrollbar starts to appear

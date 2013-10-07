@@ -90,8 +90,7 @@ public class OpenFormMapContextMenu
                                     FormEditor.open( fs, feature, layer, true );
                                 }            
                             };
-                            action.setImageDescriptor( RheiFormPlugin.imageDescriptorFromPlugin(
-                                    RheiFormPlugin.PLUGIN_ID, "icons/etool16/open_form_editor.gif" ) );
+                            action.setImageDescriptor( RheiFormPlugin.getDefault().imageDescriptor( "icons/etool16/open_form_editor.gif" ) );
                             new ActionContributionItem( action ).fill( parent, index );
                         }
                     }

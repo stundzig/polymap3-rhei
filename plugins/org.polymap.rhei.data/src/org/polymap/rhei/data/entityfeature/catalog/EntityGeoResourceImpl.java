@@ -16,6 +16,8 @@
  */
 package org.polymap.rhei.data.entityfeature.catalog;
 
+import java.util.Properties;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -27,6 +29,7 @@ import net.refractions.udig.catalog.IGeoResourceInfo;
 import net.refractions.udig.catalog.IService;
 import net.refractions.udig.catalog.ITransientResolve;
 
+import org.geotools.data.FeatureSource;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -36,8 +39,12 @@ import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
+import org.polymap.core.data.PipelineFeatureSource;
+import org.polymap.core.data.pipeline.Pipeline;
+
 import org.polymap.rhei.data.entityfeature.EntityProvider;
 import org.polymap.rhei.data.entityfeature.EntityProvider2;
+import org.polymap.rhei.data.entityfeature.EntitySourceProcessor;
 
 /**
  * 
@@ -84,9 +91,19 @@ public class EntityGeoResourceImpl
 //        if (adaptee.isAssignableFrom( FeatureStore.class )) {
 //            return adaptee.cast( service.getDS().getFeatureSource( type ) );
 //        }
-//        if (adaptee.isAssignableFrom( FeatureSource.class )) {
-//            return adaptee.cast( service.getDS().getFeatureSource( type ) );
-//        }
+        // primeraly used for org.polymap.core.data.ui.featuretable.SourceFeatureTableAction
+        // see 78: Erweiterung der Attributtabelle (Quelle) - http://polymap.org/biotop/ticket/78
+        if (adaptee.isAssignableFrom( FeatureSource.class )) {
+            Pipeline pipeline = new Pipeline( null, null, service );
+            EntitySourceProcessor proc = new EntitySourceProcessor();
+            Properties props = new Properties();
+            props.put( "geores", this );
+            proc.init( props );
+            pipeline.addFirst( proc );
+            PipelineFeatureSource fs = new PipelineFeatureSource( pipeline );
+            
+            return adaptee.cast( fs );
+        }
         if (adaptee.isAssignableFrom( SimpleFeatureType.class )) {
             if (provider instanceof EntityProvider2) {
                 return adaptee.cast( ((EntityProvider2)provider).buildFeatureType() );                
@@ -107,7 +124,7 @@ public class EntityGeoResourceImpl
         }
         return adaptee.isAssignableFrom( IGeoResourceInfo.class )
 //                || adaptee.isAssignableFrom( FeatureStore.class )
-//                || adaptee.isAssignableFrom( FeatureSource.class )
+                || adaptee.isAssignableFrom( FeatureSource.class )
                 || adaptee.isAssignableFrom( IService.class )
                 || adaptee.isAssignableFrom( ITransientResolve.class )
                 || adaptee.isAssignableFrom( SimpleFeatureType.class )
