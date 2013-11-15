@@ -38,8 +38,8 @@ public class DefaultFormPageLayouter {
     private static Log log = LogFactory.getLog( DefaultFormPageLayouter.class );
 
     public static final int         DEFAULT_FIELD_SPACING_H = 3;
-    public static final int         DEFAULT_FIELD_SPACING_V = 1;
-    public static final int         DEFAULT_SECTION_SPACING = 6;
+    public static final int         DEFAULT_FIELD_SPACING_V = 3;
+    public static final int         DEFAULT_SECTION_SPACING = 10;
 
     private Control                 lastLayoutElm = null;
 
