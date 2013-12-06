@@ -577,7 +577,8 @@ public class FormEditor
             fieldChange( null );
         }
         catch (Exception e) {
-            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "Objekt konnte korrekt geladen werden.", e );
+            log.warn( "", e );
+            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "Objekt konnte nicht korrekt geladen werden.", e );
         }
     }
 

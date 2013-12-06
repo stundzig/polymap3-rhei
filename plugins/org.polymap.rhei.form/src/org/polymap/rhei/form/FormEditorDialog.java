@@ -20,18 +20,22 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
-
+import org.polymap.core.runtime.Polymap;
 import org.polymap.core.workbench.PolymapWorkbench;
 import org.polymap.rhei.RheiFormPlugin;
+import org.polymap.rhei.field.FormFieldEvent;
+import org.polymap.rhei.field.IFormFieldListener;
 import org.polymap.rhei.internal.form.AbstractFormEditorPageContainer;
 import org.polymap.rhei.internal.form.FormEditorToolkit;
 
@@ -42,7 +46,8 @@ import org.polymap.rhei.internal.form.FormEditorToolkit;
  * @since 1.0
  */
 public class FormEditorDialog
-        extends TitleAreaDialog {
+        extends TitleAreaDialog
+        implements IFormFieldListener {
 
     private static Log log = LogFactory.getLog( FormEditorDialog.class );
 
@@ -54,10 +59,35 @@ public class FormEditorDialog
 
 
     public FormEditorDialog( IFormEditorPage page ) {
-        super( PlatformUI.  getWorkbench().getActiveWorkbenchWindow().getShell() );
+        super( PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell() );
         setShellStyle( getShellStyle() | SWT.RESIZE );
 
-        this.pageContainer = new PageContainer( page );
+        pageContainer = new PageContainer( page );
+        pageContainer.addFieldListener( this );
+        // init button state after fields and dialog have been initialized
+        Polymap.getSessionDisplay().asyncExec( new Runnable() {
+            public void run() {
+                getButton( IDialogConstants.OK_ID ).setEnabled( pageContainer.isValid() && pageContainer.isValid() );
+            }
+        });
+    }
+
+
+    @Override
+    public boolean close() {
+        pageContainer.removeFieldListener( this );
+        return super.close();
+    }
+
+
+    @Override
+    public void fieldChange( FormFieldEvent ev ) {
+        if (ev.getEventCode() == VALUE_CHANGE) {
+            Button okBtn = getButton( IDialogConstants.OK_ID );
+            if (okBtn != null) {
+                okBtn.setEnabled( pageContainer.isValid() && pageContainer.isValid() );
+            }
+        }
     }
 
 
@@ -77,6 +107,7 @@ public class FormEditorDialog
 
     protected void cancelPressed() {
         pageContainer.dispose();
+        super.cancelPressed();
     }
 
 
@@ -151,7 +182,7 @@ public class FormEditorDialog
         }
 
         public void setFormTitle( String title ) {
-            setTitle( title );
+            setMessage( title );
         }
 
         public void setEditorTitle( String title ) {
