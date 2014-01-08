@@ -14,14 +14,22 @@
  */
 package org.polymap.rhei.internal.form;
 
-import java.util.List;
-
+import org.geotools.data.DefaultQuery;
+import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
+import org.geotools.geometry.jts.JTS;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.feature.Feature;
 import org.opengis.feature.Property;
+import org.opengis.filter.Filter;
+import org.opengis.filter.FilterFactory2;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.vividsolutions.jts.geom.Envelope;
 
 import org.eclipse.swt.widgets.Menu;
 
@@ -29,12 +37,14 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.ContributionItem;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+
 import org.polymap.core.data.PipelineFeatureSource;
 import org.polymap.core.mapeditor.contextmenu.ContextMenuSite;
 import org.polymap.core.mapeditor.contextmenu.IContextMenuContribution;
 import org.polymap.core.project.ILayer;
-import org.polymap.core.workbench.PolymapWorkbench;
-
+import org.polymap.core.runtime.UIJob;
+import org.polymap.core.runtime.WaitingAtomicReference;
 import org.polymap.rhei.Messages;
 import org.polymap.rhei.RheiFormPlugin;
 import org.polymap.rhei.form.FormEditor;
@@ -50,59 +60,90 @@ public class OpenFormMapContextMenu
 
     private static Log log = LogFactory.getLog( OpenFormMapContextMenu.class );
     
-    private ContextMenuSite         site;
+    public static final FilterFactory2  ff = CommonFactoryFinder.getFilterFactory2( null );
+    
+    private ContextMenuSite              site;
 
+    private WaitingAtomicReference<Menu> menuRef = new WaitingAtomicReference();
 
-    public IContextMenuContribution init( ContextMenuSite _site ) {
-        this.site = _site;
-        setVisible( false );
-        for (ILayer layer : site.getMap().getLayers()) {
-            if (layer.isVisible()) {
-                List<Feature> features = site.coveredFeatures( layer );
-                if (features != null && features.size() > 0 && features.size() < 5) {
-                    setVisible( true );
-                    break;
-                }
-            }
-        }
-        return this;
-    }
-
-
+    private int                          menuIndex;
+    
+    
     public String getMenuGroup() {
         return GROUP_HIGH;
     }
 
 
-    public void fill( final Menu parent, final int index ) {
+    public IContextMenuContribution init( ContextMenuSite _site ) {
+        this.site = _site;
+        setVisible( false );
+        
+        final ReferencedEnvelope bbox = site.boundingBox();
+
         for (final ILayer layer : site.getMap().getLayers()) {
-            
             if (layer.isVisible()) {
-            
-                List<Feature> features = site.coveredFeatures( layer );
-                if (features != null) {
-                    try {
-                        final PipelineFeatureSource fs = PipelineFeatureSource.forLayer( layer, true );
-                        
-                        for (final Feature feature : features) {
-                            Action action = new Action( createLabel( feature, layer ) ) {
-                                public void run() {
-                                    FormEditor.open( fs, feature, layer, true );
-                                }            
-                            };
-                            action.setImageDescriptor( RheiFormPlugin.getDefault().imageDescriptor( "icons/etool16/open_form_editor.gif" ) );
-                            new ActionContributionItem( action ).fill( parent, index );
+                setVisible( true );
+                UIJob job = new UIJob( "Find features: " + layer.getLabel() ) {
+                    protected void runWithException( IProgressMonitor monitor ) throws Exception {
+                        FeatureIterator it = null;
+                        try {
+                            PipelineFeatureSource fs = PipelineFeatureSource.forLayer( layer, false );
+                            if (fs != null) {
+                                ReferencedEnvelope transformed = bbox.transform( layer.getCRS(), true );
+                                String propname = "";
+                                Filter filter = ff.intersects( 
+                                        ff.property( propname ),
+                                        ff.literal( JTS.toGeometry( (Envelope)transformed ) ) );
+
+                                FeatureCollection features = fs.getFeatures( new DefaultQuery( 
+                                        fs.getSchema().getTypeName(), filter, 10, null, null ) );
+
+                                for (it = features.features(); it.hasNext(); ) {
+                                    awaitAndFillMenu( layer, fs, it.next() );
+                                }
+                            }
+                        }
+                        catch (Exception e) {
+                            log.warn( "Filtering covered features failed: ", e );
+                        }
+                        finally {
+                            if (it != null) {it.close();}
                         }
                     }
-                    catch (Exception e) {
-                        PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "", e );
-                    }
-                }
+                };
+                job.schedule();
             }
         }
+        return this;
     }
 
     
+    public void fill( final Menu parent, final int index ) {
+        menuRef.setAndNotify( parent );
+        menuIndex = index;
+    }
+
+    
+    protected void awaitAndFillMenu( final ILayer layer, final PipelineFeatureSource fs, final Feature feature ) {
+        final Action action = new Action( createLabel( feature, layer ) ) {
+            public void run() {
+                FormEditor.open( fs, feature, layer, true );
+            }            
+        };
+        action.setImageDescriptor( RheiFormPlugin.getDefault().imageDescriptor( "icons/etool16/open_form_editor.gif" ) );
+        
+        // await and actually fill menu
+        final Menu menu = menuRef.get();
+        menu.getDisplay().asyncExec( new Runnable() {
+            public void run() {
+                if (!menu.isDisposed()) {
+                    new ActionContributionItem( action ).fill( menu, menuIndex );
+                }
+            }
+        });
+    }
+
+
     protected String createLabel( Feature feature, ILayer layer ) {
         // last resort: fid
         String featureLabel = feature.getIdentifier().getID();
