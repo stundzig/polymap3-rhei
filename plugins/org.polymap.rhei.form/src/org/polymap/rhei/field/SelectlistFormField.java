@@ -267,7 +267,8 @@ public class SelectlistFormField
                 }
                 i++;
             }
-            list.setSelection( Ints.toArray( selections ) );
+            list.setSelection( Ints.toArray( selections ) ); 
+            site.fireEvent( SelectlistFormField.this, IFormFieldListener.VALUE_CHANGE, value );
         }
         else {
             site.fireEvent( SelectlistFormField.this, IFormFieldListener.VALUE_CHANGE, null );
