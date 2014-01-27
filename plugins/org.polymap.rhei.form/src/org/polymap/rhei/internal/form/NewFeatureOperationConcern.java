@@ -63,25 +63,27 @@ public class NewFeatureOperationConcern
                 throws ExecutionException {
                     IStatus result = info.next().execute( monitor, _info );
 
-                    Display display = (Display)_info.getAdapter( Display.class );
-                    display.asyncExec( new Runnable() {
-                        public void run() {
-                            try {
-                                if (MessageDialog.openQuestion( 
-                                        PolymapWorkbench.getShellToParentOn(), 
-                                        i18n.get( "dialogTitle", 1 ),
-                                        i18n.get( "dialogMsg" ) )) {
-                                    
-                                    Feature feature = ((NewFeatureOperation)op).getCreatedFeature();
-                                    FeatureStore fs = ((NewFeatureOperation)op).getFeatureStore();
-                                    FormEditor.open( fs, feature, null, true );
+                    if (result.isOK()) {
+                        Display display = (Display)_info.getAdapter( Display.class );
+                        display.asyncExec( new Runnable() {
+                            public void run() {
+                                try {
+                                    if (MessageDialog.openQuestion( 
+                                            PolymapWorkbench.getShellToParentOn(), 
+                                            i18n.get( "dialogTitle", 1 ),
+                                            i18n.get( "dialogMsg" ) )) {
+
+                                        Feature feature = ((NewFeatureOperation)op).getCreatedFeature();
+                                        FeatureStore fs = ((NewFeatureOperation)op).getFeatureStore();
+                                        FormEditor.open( fs, feature, null, true );
+                                    }
+                                }
+                                catch (Exception e) {
+                                    PolymapWorkbench.handleError( DataPlugin.PLUGIN_ID, this, "Das Formular zum Bearbeiten des neuen Objektes konnte nicht geöffnet werden.", e );
                                 }
                             }
-                            catch (Exception e) {
-                                PolymapWorkbench.handleError( DataPlugin.PLUGIN_ID, this, "Das Formular zum Bearbeiten des neuen Objektes konnte nicht geöffnet werden.", e );
-                            }
-                        }
-                    });
+                        });
+                    }
                     return result;
                 }
 

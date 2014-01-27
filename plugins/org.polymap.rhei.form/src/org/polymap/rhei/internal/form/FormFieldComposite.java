@@ -227,6 +227,7 @@ public class FormFieldComposite
     public void fireEvent( Object source, int eventCode, Object newValue ) {
         Object validatedNewValue = null;
 
+        // FIXME
         errorMsg = externalErrorMsg;
         
         // check isDirty / validator
