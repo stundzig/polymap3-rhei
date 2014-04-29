@@ -227,11 +227,9 @@ public class FormFieldComposite
     public void fireEvent( Object source, int eventCode, Object newValue ) {
         Object validatedNewValue = null;
 
-        // FIXME
-        errorMsg = externalErrorMsg;
-        
         // check isDirty / validator
-        if (eventCode == IFormFieldListener.VALUE_CHANGE && errorMsg == null) {
+        if (eventCode == IFormFieldListener.VALUE_CHANGE) {
+            errorMsg = externalErrorMsg;
             if (validator != null) {
                 errorMsg = validator.validate( newValue );
             }
