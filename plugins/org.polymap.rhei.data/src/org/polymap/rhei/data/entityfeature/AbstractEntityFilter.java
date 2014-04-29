@@ -107,16 +107,26 @@ public abstract class AbstractEntityFilter
 
 
     /**
-     * Builds a conjunction of the given expressions. If ex
+     * Builds a conjunction of the given expressions.
      *
-     * @param exp1 Might by null.
+     * @param exp1
      * @param exp2
      * @return
+     * @throws IllegalArgumentException If both expressions are null.
      */
     protected BooleanExpression and( BooleanExpression exp1, BooleanExpression exp2 ) {
-        return exp1 != null
-                ? QueryExpressions.and( exp1, exp2 )
-                : exp2;
+        if (exp1 == null && exp2 == null) {
+            throw new IllegalArgumentException( "Both expressions are null." );
+        }
+        else if (exp1 == null) {
+            return exp2;
+        }
+        else if (exp2 == null) {
+            return exp1;
+        }
+        else {
+            return QueryExpressions.and( exp1, exp2 );
+        }
     }
 
 
