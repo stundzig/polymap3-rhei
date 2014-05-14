@@ -66,6 +66,8 @@ import org.polymap.core.data.DataPlugin;
 import org.polymap.core.data.FeatureChangeEvent;
 import org.polymap.core.data.operations.ModifyFeaturesOperation;
 import org.polymap.core.data.operations.ZoomFeatureBoundsOperation;
+import org.polymap.core.model.security.ACLUtils;
+import org.polymap.core.model.security.AclPermission;
 import org.polymap.core.operation.IOperationSaveListener;
 import org.polymap.core.operation.OperationSupport;
 import org.polymap.core.project.ILayer;
@@ -232,45 +234,48 @@ public class FormEditor
         }
 
         // submit action
-        submitAction = new Action( Messages.get( "FormEditor_submit" ) ) {
-            public void run() {
-                try {
-                    log.debug( "submitAction.run(): ..." );
-                    doSave( new NullProgressMonitor() );
-                    
-                    //OperationSupport.instance().saveChanges();
-                }
-//                catch (ConcurrentModificationException e) {
-//                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this,
-//                            "Daten wurden von einem anderen Nutzer geändert.\nKlicken Sie auf \"Daten von anderem Nutzer übernehmen\" und öffnen Sie den Datensatz erneut.\nACHTUNG: Wenn Sie den Datensatz nicht erneut öffnen, dann können Daten verloren gehen.", e );
-//                }
-                catch (Exception e) {
-                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, e.getLocalizedMessage(), e );
-                }
-            }
-        };
-        submitAction.setImageDescriptor( ImageDescriptor.createFromURL(
-                RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/validate.gif" ) ) );
-        submitAction.setToolTipText( Messages.get( "FormEditor_submitTip" ) );
-        submitAction.setEnabled( false );
-        standardPageActions.add( submitAction );
+        if (ACLUtils.checkPermission( layer, AclPermission.WRITE, false )) {
 
-        // revert action
-        revertAction = new Action( Messages.get( "FormEditor_revert" ) ) {
-            public void run() {
-                log.debug( "revertAction.run(): ..." );
-                doLoad( new NullProgressMonitor() );
-            }
-        };
-        revertAction.setImageDescriptor( ImageDescriptor.createFromURL(
-                RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/revert.gif" ) ) );
-        revertAction.setToolTipText( Messages.get( "FormEditor_revertTip" ) );
-        revertAction.setEnabled( false );
-        standardPageActions.add( revertAction );
+            submitAction = new Action( Messages.get( "FormEditor_submit" ) ) {
+                public void run() {
+                    try {
+                        log.debug( "submitAction.run(): ..." );
+                        doSave( new NullProgressMonitor() );
+
+                        //OperationSupport.instance().saveChanges();
+                    }
+                    //                catch (ConcurrentModificationException e) {
+                    //                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this,
+                    //                            "Daten wurden von einem anderen Nutzer geändert.\nKlicken Sie auf \"Daten von anderem Nutzer übernehmen\" und öffnen Sie den Datensatz erneut.\nACHTUNG: Wenn Sie den Datensatz nicht erneut öffnen, dann können Daten verloren gehen.", e );
+                    //                }
+                    catch (Exception e) {
+                        PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, e.getLocalizedMessage(), e );
+                    }
+                }
+            };
+            submitAction.setImageDescriptor( ImageDescriptor.createFromURL(
+                    RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/validate.gif" ) ) );
+            submitAction.setToolTipText( Messages.get( "FormEditor_submitTip" ) );
+            submitAction.setEnabled( false );
+            standardPageActions.add( submitAction );
+
+            // revert action
+            revertAction = new Action( Messages.get( "FormEditor_revert" ) ) {
+                public void run() {
+                    log.debug( "revertAction.run(): ..." );
+                    doLoad( new NullProgressMonitor() );
+                }
+            };
+            revertAction.setImageDescriptor( ImageDescriptor.createFromURL(
+                    RheiFormPlugin.getDefault().getBundle().getResource( "icons/etool16/revert.gif" ) ) );
+            revertAction.setToolTipText( Messages.get( "FormEditor_revertTip" ) );
+            revertAction.setEnabled( false );
+            standardPageActions.add( revertAction );
         
-        // save listener 
-        operationSaveListener = new OperationSaveListener();
-        OperationSupport.instance().prependOperationSaveListener( operationSaveListener );
+            // save listener 
+            operationSaveListener = new OperationSaveListener();
+            OperationSupport.instance().prependOperationSaveListener( operationSaveListener );
+        }
 
         // field change listener
         EventManager.instance().subscribe( fieldListener = 
@@ -394,11 +399,18 @@ public class FormEditor
         }
 
         log.debug( "fieldChange(): dirty=" + isDirty + ", isValid=" + isValid );
-        submitAction.setEnabled( isDirty && isValid );
-        revertAction.setEnabled( isDirty );
+        if (submitAction != null) {
+            submitAction.setEnabled( isDirty && isValid );
+            revertAction.setEnabled( isDirty );
 
-        if (oldIsDirty != isDirty) {
-            editorDirtyStateChanged();
+            // set editor to "dirty" only if permission are ok
+            if (oldIsDirty != isDirty) {
+                editorDirtyStateChanged();
+            }
+        }
+        else {
+            // never be dirty if no permissions to write
+            isDirty = false;
         }
     }
 
@@ -409,7 +421,9 @@ public class FormEditor
         // this also disposes my pages
         super.dispose();
         pages.clear();
-        OperationSupport.instance().removeOperationSaveListener( operationSaveListener );
+        if (operationSaveListener != null) {
+            OperationSupport.instance().removeOperationSaveListener( operationSaveListener );
+        }
         
         ILayer layer = ((FormEditorInput)getEditorInput()).getLayer();
         if (layer != null) {
