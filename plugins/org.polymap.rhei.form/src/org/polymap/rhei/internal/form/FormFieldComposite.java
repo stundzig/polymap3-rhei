@@ -185,7 +185,12 @@ public class FormFieldComposite
     }
 
     public void setFormFieldValue( Object value ) {
-        field.setValue( value );
+        try {
+            field.setValue( validator.transform2Field( value ) );
+        }
+        catch (Exception e) {
+            throw new RuntimeException( e );
+        }
     }
     
     public void setEnabled( boolean enabled ) {
