@@ -95,9 +95,12 @@ public class ConstantWithSynonyms<L> {
         /**
          * The constant for the given label or synonym.
          */
-        public T forId( int id ) {
+        public T forId( Integer id ) {
+            if (id == null) {
+                return null;
+            }
             for (ConstantWithSynonyms elm : constants) {
-                if (elm.id == id) {
+                if (elm.id == id.intValue()) {
                     return (T)elm;
                 }
             }
