@@ -14,6 +14,9 @@
  */
 package org.polymap.rhei.field;
 
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -22,10 +25,19 @@ import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
 
+import org.eclipse.rwt.widgets.ExternalBrowser;
+
+import org.polymap.core.ui.FormDataFactory;
+import org.polymap.core.ui.FormLayoutFactory;
+
+import org.polymap.rhei.RheiFormPlugin;
 import org.polymap.rhei.form.IFormEditorToolkit;
 import org.polymap.rhei.internal.form.FormEditorToolkit;
 
@@ -39,6 +51,8 @@ public class StringFormField
 
     private static Log log = LogFactory.getLog( StringFormField.class );
 
+    public static final Pattern URL_PATTERN = Pattern.compile( "^((https?|ftp)://|(www|ftp)\\.)[a-z0-9-]+(\\.[a-z0-9-]+)+([/?].*)?$" );
+    
     /**
      * Possible styles of a {@link StringFormField}
      */
@@ -46,7 +60,9 @@ public class StringFormField
         ALIGN_LEFT      ( SWT.LEFT ),
         ALIGN_CENTER    ( SWT.CENTER ),
         ALIGN_RIGHT     ( SWT.RIGHT ),
-        PASSWORD        ( SWT.PASSWORD );
+        PASSWORD        ( SWT.PASSWORD ),
+        /** Allow a download link to be shown if value is an URL. */
+        ALLOW_DOWNLOAD  ( 1<<30 );
         
         public int constant = -1;
         Style( int constant ) {
@@ -59,6 +75,8 @@ public class StringFormField
     private IFormFieldSite          site;
 
     private Text                    text;
+    
+    private Button                  downloadLink;
 
     // XXX use (proper) validator to make the translation to String
     private Object                  loadedValue;
@@ -72,14 +90,17 @@ public class StringFormField
         this.styles = styles;    
     }
 
+    @Override
     public void init( IFormFieldSite _site ) {
         this.site = _site;
     }
 
+    @Override
     public void dispose() {
         text.dispose();
     }
 
+    @Override
     public Control createControl( Composite parent, IFormEditorToolkit toolkit ) {
         int swt = SWT.NONE;
         for (Style style : styles) {
@@ -89,7 +110,20 @@ public class StringFormField
     }
 
     protected Control createControl( Composite parent, IFormEditorToolkit toolkit, int style ) {
-        text = toolkit.createText( parent, "", style );
+        Control result = null;
+        
+        // download supported
+        if (ArrayUtils.contains( styles, Style.ALLOW_DOWNLOAD )) {
+            result = parent = site.getToolkit().createComposite( parent );
+            parent.setLayout( FormLayoutFactory.defaults().spacing( 3 ).create() );
+
+            text = toolkit.createText( parent, "", style );
+            text.setLayoutData( FormDataFactory.filled().create() );
+        }
+        // basic style, no download link supported
+        else {
+            result = text = toolkit.createText( parent, "", style );
+        }
 
         // modify listener
         text.addModifyListener( new ModifyListener() {
@@ -97,6 +131,8 @@ public class StringFormField
                 log.debug( "modifyEvent(): test= " + text.getText() );
                 site.fireEvent( StringFormField.this, IFormFieldListener.VALUE_CHANGE,
                         loadedValue == null && text.getText().equals( "" ) ? null : text.getText() );
+                
+                checkDownloadLink();
             }
         });
         // focus listener
@@ -112,9 +148,10 @@ public class StringFormField
         });
         text.setEnabled( deferredEnabled );
         text.setBackground( deferredEnabled ? FormEditorToolkit.textBackground : FormEditorToolkit.textBackgroundDisabled );
-        return text;
+        return result;
     }
 
+    @Override
     public IFormField setEnabled( boolean enabled ) {
         if (text != null) {
             text.setEnabled( enabled );
@@ -130,11 +167,13 @@ public class StringFormField
      * Explicitly set the value of the text field. This causes events to be
      * fired just like the value was typed in.
      */
+    @Override
     public IFormField setValue( Object value ) {
         text.setText( value != null ? (String)value : "" );
         return this;
     }
 
+    @Override
     public void load() throws Exception {
         assert text != null : "Control is null, call createControl() first.";
 
@@ -142,6 +181,7 @@ public class StringFormField
         text.setText( loadedValue != null ? loadedValue.toString() : "" );
     }
 
+    @Override
     public void store() throws Exception {
         // XXX what is the semantics?
 //        if (text.getEnabled() && (text.getStyle() | SWT.READ_ONLY) == 0) {
@@ -149,4 +189,32 @@ public class StringFormField
 //        }
     }
 
+    protected void checkDownloadLink() {
+        if (ArrayUtils.contains( styles, Style.ALLOW_DOWNLOAD )) {
+            final String value = text.getText();
+            if (value != null && URL_PATTERN.matcher( value ).matches()) {
+                if (downloadLink == null) {
+                    //downloadLink = site.getToolkit().createLabel( text.getParent(), value );
+                    //downloadLink.setData( RWT.MARKUP_ENABLED, Boolean.TRUE );
+                    
+                    //downloadLink = site.getToolkit().createButton( text.getParent(), null, SWT.PUSH );
+                    downloadLink = new Button( text.getParent(), SWT.PUSH );
+                    downloadLink.setImage( RheiFormPlugin.getDefault().imageForName( "icons/etool16/run.gif" ) );
+                    downloadLink.setToolTipText( "Download" );
+                    downloadLink.setLayoutData( FormDataFactory.filled().clearLeft().width( 30 ).create() );
+                    downloadLink.addSelectionListener( new SelectionAdapter() {
+                        public void widgetSelected( SelectionEvent e ) {
+                            ExternalBrowser.open( "download_window", text.getText(),
+                                    ExternalBrowser.NAVIGATION_BAR | ExternalBrowser.STATUS );
+
+                        }
+                    });
+
+                    text.setLayoutData( FormDataFactory.filled().right( downloadLink ).create() );
+                    text.getParent().getParent().layout( true );
+                }
+            }
+        }
+    }
+    
 }

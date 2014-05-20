@@ -50,6 +50,7 @@ import org.polymap.rhei.field.IFormField;
 import org.polymap.rhei.field.IFormFieldValidator;
 import org.polymap.rhei.field.NumberValidator;
 import org.polymap.rhei.field.StringFormField;
+import org.polymap.rhei.field.StringFormField.Style;
 import org.polymap.rhei.field.TextFormField;
 import org.polymap.rhei.form.FormEditor;
 import org.polymap.rhei.form.IFormEditorPage;
@@ -133,7 +134,7 @@ public class StandardPageProvider
                                 layoutData.height = 100;
                             }
                             else {
-                                formField = new StringFormField();
+                                formField = new StringFormField( Style.ALLOW_DOWNLOAD );
                             }
                         }
                         // Number
