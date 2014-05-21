@@ -86,7 +86,7 @@
          <attribute name="isStandard" type="boolean">
             <annotation>
                <documentation>
-                  
+                  A standard page provider is not dedicated a particular Feature type. Standard page providers are displayed in the UI only if there are no regular page providers. This is false by default.
                </documentation>
             </annotation>
          </attribute>
