@@ -37,8 +37,10 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 
 import org.eclipse.ui.IMemento;
+import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
@@ -64,7 +66,7 @@ import org.polymap.rhei.navigator.filter.OpenFilterAction;
  */
 public class FilterView
         extends ViewPart 
-        implements IFormFieldListener {
+        implements IFormFieldListener, IPartListener {
 
     private static Log log = LogFactory.getLog( FilterView.class );
 
@@ -129,9 +131,9 @@ public class FilterView
 
     private ScrolledComposite           content;
 
-    private Button resetBtn;
+    private Button                      resetBtn;
 
-    private Button submitBtn;
+    private Button                      submitBtn;
     
     
     public void init( IViewSite site, IMemento memento )
@@ -161,6 +163,13 @@ public class FilterView
                 });
             }
         }
+    }
+
+
+    @Override
+    public void dispose() {
+        getSite().getPage().removePartListener( this );
+        super.dispose();
     }
 
 
@@ -280,10 +289,15 @@ public class FilterView
         submitBtn.addSelectionListener( new SelectionAdapter() {
             public void widgetSelected( SelectionEvent ev ) {
                 try {
-                    filterEditor.doSubmit();
-                    
-                    Filter filterFilter = filter.createFilter( filterEditor );
-                    OpenFilterAction.showResults( filter.getLayer(), filterFilter );
+                    // also triggered via default button 'ENTER'; removing default button on #partDeactivated()
+                    // does not work; so we check here if we are the active part actually
+                    log.debug( getSite().getPage().getActivePart() +  " : " + FilterView.this );
+                    if (getSite().getPage().getActivePart() == FilterView.this) {
+                        filterEditor.doSubmit();
+
+                        Filter filterFilter = filter.createFilter( filterEditor );
+                        OpenFilterAction.showResults( filter.getLayer(), filterFilter );
+                    }
                 }
                 catch (Exception e) {
                     PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "", e );
@@ -291,7 +305,10 @@ public class FilterView
             }
         });
         btnRow.pack();
-            
+
+        // default button
+        getSite().getPage().addPartListener( this );
+        
         // separator line
         Label titleBarSeparator = new Label( composite, SWT.HORIZONTAL | SWT.SEPARATOR );
         titleBarSeparator.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ) );
@@ -314,6 +331,39 @@ public class FilterView
 
 
     public void setFocus() {
+        //log.info( "setFocus..." );
     }
+
     
+    // IPartListener **************************************
+    
+    @Override
+    public void partActivated( IWorkbenchPart part ) {
+        if (part == FilterView.this && !submitBtn.isDisposed()) {
+            getSite().getShell().setDefaultButton( submitBtn );                    
+            log.debug( "activated." );
+        }
+    }
+
+    @Override
+    public void partDeactivated( IWorkbenchPart part ) {
+        if (part == FilterView.this && !submitBtn.isDisposed()) {
+            getSite().getShell().setDefaultButton( null );                    
+            log.debug( "deactivated." );
+        }
+    }
+
+    @Override
+    public void partBroughtToTop( IWorkbenchPart part ) {
+    }
+
+    @Override
+    public void partClosed( IWorkbenchPart part ) {
+    }
+
+
+    @Override
+    public void partOpened( IWorkbenchPart part ) {
+    }
+
 }
