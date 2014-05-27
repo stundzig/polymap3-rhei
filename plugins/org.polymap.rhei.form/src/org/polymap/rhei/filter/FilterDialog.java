@@ -18,12 +18,14 @@ package org.polymap.rhei.filter;
 import org.opengis.filter.Filter;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -173,7 +175,29 @@ public class FilterDialog
         setTitle( Messages.get( "FilterEditor_title" ) );
         setMessage( Messages.get( "FilterEditor_description" ) );
 
-        contents = filter.createControl( area, filterEditor );
+        // content area
+
+        // reused from FilterView. line 300ff.
+        ScrolledComposite content = new ScrolledComposite( area, SWT.V_SCROLL );
+        GridLayout layout = new GridLayout();
+        layout.marginHeight = 0;
+        layout.marginWidth = 0;
+        layout.verticalSpacing = 0;
+        layout.horizontalSpacing = 0;
+        content.setLayout( layout );
+        content.setLayoutData( new GridData( GridData.FILL_BOTH ) );
+        content.setFont( parent.getFont() );
+        content.setBackground( parent.getBackground() );
+        content.setExpandHorizontal( true );
+        content.setExpandVertical( true );
+        content.setShowFocusedControl( true );
+        
+        Composite filterControl = filter.createControl( content, filterEditor );
+        content.setContent( filterControl );
+        content.setMinSize( filterControl.computeSize( SWT.DEFAULT, SWT.DEFAULT ) );
+        content.changed( new Control[] { filterControl } );
+
+        // contents = filter.createControl( area, filterEditor );
 
         // load default values
         filterEditor.doLoad();
