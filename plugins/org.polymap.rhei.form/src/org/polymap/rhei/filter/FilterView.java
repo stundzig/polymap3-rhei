@@ -300,7 +300,7 @@ public class FilterView
                     }
                 }
                 catch (Exception e) {
-                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "", e );
+                    PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, this, "Die Abfrage konnte nicht erfolgreich durchgeführt werden.", e );
                 }
             }
         });
