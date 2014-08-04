@@ -69,7 +69,7 @@ public class CompositesFeatureContentProvider
 
     public Object[] getElements( Object input ) {
         log.debug( "getElements(): input=" + input.getClass().getName() );
-        List<IFeatureTableElement> result = new ArrayList();
+        List<IFeatureTableElement> result = new ArrayList( 1024 );
         for (final Composite composite : composites) {
             result.add( new FeatureTableElement( composite ) );
         }
