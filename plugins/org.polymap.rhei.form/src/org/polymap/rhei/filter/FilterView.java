@@ -242,7 +242,14 @@ public class FilterView
     }
 
     
+    @Override
     public void fieldChange( FormFieldEvent ev ) {
+        if (ev.getEventCode() == IFormFieldListener.FOCUS_GAINED) {
+            // clicking any control activates the view, clicking the submitBtn does not
+            // and afterwards clicking control does not work either!
+            // we need an active view, otherwise the check for active part in submitBtn does not work
+            getSite().getPage().activate( FilterView.this );
+        }
         if (ev.getEventCode() == IFormFieldListener.VALUE_CHANGE) {
             if (submitBtn != null) {
                 submitBtn.setEnabled( filterEditor.isDirty() && filterEditor.isValid() );
@@ -291,6 +298,7 @@ public class FilterView
                 try {
                     // also triggered via default button 'ENTER'; removing default button on #partDeactivated()
                     // does not work; so we check here if we are the active part actually
+                    // see #fieldChange and IPartListener 
                     log.debug( getSite().getPage().getActivePart() +  " : " + FilterView.this );
                     if (getSite().getPage().getActivePart() == FilterView.this) {
                         filterEditor.doSubmit();

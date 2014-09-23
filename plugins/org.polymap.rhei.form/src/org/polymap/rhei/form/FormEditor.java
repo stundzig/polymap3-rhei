@@ -110,7 +110,7 @@ public class FormEditor
      * @return The editor of the given feature, or null.
      */
     public static FormEditor open( FeatureStore fs, Feature feature, ILayer layer, boolean activate ) {
-        try {
+//        try {
             log.debug( "open(): feature= " + feature );
             FormEditorInput input = new FormEditorInput( fs, feature );
 
@@ -118,29 +118,35 @@ public class FormEditor
             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
             IEditorReference[] editors = page.getEditorReferences();
             for (IEditorReference reference : editors) {
-                IEditorInput cursor = reference.getEditorInput();
-                if (cursor instanceof FormEditorInput) {
-                    log.debug( "        editor: feature= " + ((FormEditorInput)cursor).getFeature().getIdentifier().getID() );
-                }
-                if (cursor.equals( input )) {
-                    Object previous = page.getActiveEditor();
-                    if (activate) {
-                        page.activate( reference.getPart( true ) );
+                try {
+                    IEditorInput cursor = reference.getEditorInput();
+                    if (cursor instanceof FormEditorInput) {
+                        log.debug( "        editor: feature= " + ((FormEditorInput)cursor).getFeature().getIdentifier().getID() );
                     }
-                    return (FormEditor)reference.getEditor( false );
+                    if (cursor.equals( input )) {
+                        Object previous = page.getActiveEditor();
+                        if (activate) {
+                            page.activate( reference.getPart( true ) );
+                        }
+                        return (FormEditor)reference.getEditor( false );
+                    }
+                }
+                catch (PartInitException e) {
+                    log.warn( "", e );
                 }
             }
 
-            // not found -> open new editor
-            IEditorPart part = page.openEditor( input, input.getEditorId(), activate, IWorkbenchPage.MATCH_NONE );
-            log.debug( "editor= " + part );
-            // can also be ErrorEditorPart
-            return part instanceof FormEditor ? (FormEditor)part : null;
-        }
-        catch (PartInitException e) {
-            PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, null, e.getMessage(), e );
-            return null;
-        }
+            try {
+                // not found -> open new editor
+                IEditorPart part = page.openEditor( input, input.getEditorId(), activate, IWorkbenchPage.MATCH_NONE );
+                log.debug( "editor= " + part );
+                // can also be ErrorEditorPart
+                return part instanceof FormEditor ? (FormEditor)part : null;
+            }
+            catch (PartInitException e) {
+                PolymapWorkbench.handleError( RheiFormPlugin.PLUGIN_ID, null, e.getMessage(), e );
+                return null;
+            }
     }
 
 
