@@ -36,7 +36,7 @@ import org.polymap.rhei.field.StringFormField;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public abstract class TransientFilter
+public class TransientFilter
         implements IFilter {
 
     private static final AtomicInteger PROP_NAME_COUNT = new AtomicInteger( 0 );
@@ -89,6 +89,12 @@ public abstract class TransientFilter
 
     public boolean hasControl() {
         return false;
+    }
+
+    @Override
+    @SuppressWarnings("hiding")
+    public Composite createControl( Composite parent, IFilterEditorSite site ) {
+        throw new RuntimeException( "no default implementation" );
     }
 
     public int getMaxResults() {
