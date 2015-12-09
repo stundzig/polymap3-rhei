@@ -8,15 +8,10 @@ import org.osgi.framework.BundleContext;
  */
 public class RheiDataPlugin extends AbstractUIPlugin {
 
-	// The plug-in ID
 	public static final String PLUGIN_ID = "org.polymap.rhei.data";
 
-	// The shared instance
 	private static RheiDataPlugin plugin;
 	
-	/**
-	 * The constructor
-	 */
 	public RheiDataPlugin() {
 	}
 
